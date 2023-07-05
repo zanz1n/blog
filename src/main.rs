@@ -1,4 +1,5 @@
 mod model;
+mod utils;
 
 use std::{
     env,
