@@ -1,5 +1,5 @@
 [workspace]
-members = ["."]
+members = [".", "migration"]
 
 [package]
 name = "crud1"
