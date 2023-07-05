@@ -1,19 +1,26 @@
+mod model;
+
 use std::{
     env,
     io::{Error, ErrorKind},
     str::FromStr,
+    time::Duration,
 };
 
 use actix_cors::Cors;
-use actix_web::{middleware, App, HttpServer};
+use actix_web::{middleware, web::Data, App, HttpServer};
 use sea_orm::{ConnectOptions, Database, DatabaseConnection};
 
+/// Enum to identify if the app is running in a development or
+/// production environment
 enum ProcessEnv {
     Development,
     Production,
+    // When no environment is set
     None,
 }
 
+// Implementing this trait to easly obtain this enum from a string
 impl FromStr for ProcessEnv {
     type Err = Error;
 
@@ -31,6 +38,8 @@ impl FromStr for ProcessEnv {
     }
 }
 
+/// Function to eliminate boilerplate when retrieving and converting app
+/// parameters from environment variables.
 fn env_param<T: FromStr>(key: &str, default: Option<T>) -> T {
     let required = match default {
         None => true,
@@ -90,33 +99,53 @@ async fn main() -> Result<(), Error> {
 
     env_logger::init();
 
+    // Retrieving app exec parameters from environment variables
     let port = env_param::<u16>("PORT", Some(8080));
     let actix_workers = env_param::<usize>("ACTIX_WORKERS", Some(4));
     let database_uri = env_param::<String>("DATABASE_URI", None);
+    let min_db_conns = env_param::<u32>("MIN_DB_CONNECTIONS", Some(1));
+    let max_db_conns = env_param::<u32>("MAX_DB_CONNECTIONS", None);
+    let db_conn_timeout = env_param::<u64>("DB_CONNECT_TIMEOUT", Some(5));
+    let db_conn_idle_timeout = env_param::<u64>("DB_CONN_IDLE_TIMEOUT", Some(10));
 
-    let mut db = connect_to_postgres(database_uri).await?;
+    let mut connection_opts = ConnectOptions::new(database_uri).to_owned();
+
+    connection_opts
+        .max_connections(max_db_conns)
+        .min_connections(min_db_conns)
+        .connect_timeout(Duration::from_secs(db_conn_timeout))
+        .idle_timeout(Duration::from_secs(db_conn_idle_timeout));
 
     match process_env {
-        ProcessEnv::Development => db.set_metric_callback(|i| {
-            log::info!(target: "query_log", "Statement: {}\n\tTook {}ms {}",
-                i.statement,
-                i.elapsed.as_millis(),
-                if i.failed { "Success" } else { "Fail" }
-            );
-        }),
-        _ => {}
-    }
+        ProcessEnv::Development => {
+            connection_opts.sqlx_logging_level(log::LevelFilter::Debug);
+        }
+        _ => {
+            connection_opts.sqlx_logging_level(log::LevelFilter::Info);
+        }
+    };
 
-    HttpServer::new(|| {
+    let db = connect_to_postgres(connection_opts).await?;
+
+    // Using the box structure to allow multi-thread access to the
+    // DatabaseConnection instance.
+    let db_box: &DatabaseConnection = Box::leak(Box::new(db));
+
+    // Actix web config boilerplate
+    HttpServer::new(move || {
+        // Setting up app middlewares
         let actix_logger = middleware::Logger::new("%{r}a %r %s %D").log_target("http_log");
-        let actix_path_normalizer = middleware::NormalizePath::new(middleware::TrailingSlash::Trim);
+        let actix_path_normalizer = middleware::NormalizePath::trim();
 
         let actix_cors = Cors::default()
             .allow_any_origin()
             .allow_any_header()
-            .max_age(60 * 60);
+            .max_age(60 * 60); // 1 hour (Access-Control-Max-Age header)
+
+        let db_data = Data::new(db_box);
 
         App::new()
+            .app_data(db_data)
             .wrap(actix_logger)
             .wrap(actix_path_normalizer)
             .wrap(actix_cors)
