@@ -17,14 +17,14 @@ use sea_orm::{ConnectOptions, DatabaseConnection};
 
 #[tokio::main]
 async fn main() -> Result<(), Error> {
-    let mut process_env = env_param::<ProcessEnv>("APP_ENV", Some(ProcessEnv::None));
+    let process_env = env_param::<ProcessEnv>("APP_ENV", Some(ProcessEnv::None));
 
     match process_env {
         ProcessEnv::None => {
             dotenvy::dotenv()
                 .expect("Environment variables provided and .env file is inaccessible");
 
-            process_env = env_param::<ProcessEnv>("APP_ENV", None);
+            // process_env = env_param::<ProcessEnv>("APP_ENV", None);
         }
         _ => {}
     };
@@ -46,16 +46,8 @@ async fn main() -> Result<(), Error> {
         .max_connections(max_db_conns)
         .min_connections(min_db_conns)
         .connect_timeout(Duration::from_secs(db_conn_timeout))
-        .idle_timeout(Duration::from_secs(db_conn_idle_timeout));
-
-    match process_env {
-        ProcessEnv::Development => {
-            connection_opts.sqlx_logging_level(log::LevelFilter::Debug);
-        }
-        _ => {
-            connection_opts.sqlx_logging(false);
-        }
-    };
+        .idle_timeout(Duration::from_secs(db_conn_idle_timeout))
+        .sqlx_logging_level(log::LevelFilter::Debug);
 
     let db = connect_to_postgres(connection_opts).await?;
 
