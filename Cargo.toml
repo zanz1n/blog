@@ -20,7 +20,7 @@ nanoid = "0.4"
 version = "^0.9.0"
 features = [
     "sqlx-postgres",
-    "runtime-tokio-native-tls",
+    "runtime-tokio-rustls",
     "macros"
 ]
 
