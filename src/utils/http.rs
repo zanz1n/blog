@@ -14,9 +14,15 @@ pub struct DataBody<T: Serialize> {
     message: String,
 }
 
-#[derive(Serialize, Deserialize)]
-pub struct PathWithId<T> {
-    id: T,
+#[derive(Clone, Copy, Serialize, Deserialize)]
+pub struct PathWithId<T: Clone> {
+    pub id: T,
+}
+
+impl<T: Clone> PathWithId<T> {
+    pub fn id(&self) -> T {
+        self.id.clone()
+    }
 }
 
 pub fn serialize_response<T>(data: &T, status_code: StatusCode) -> HttpResponse<BoxBody>
