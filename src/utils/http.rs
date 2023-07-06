@@ -14,6 +14,56 @@ pub struct DataBody<T: Serialize> {
     message: String,
 }
 
+#[derive(Serialize, Deserialize)]
+pub struct PathWithId<T> {
+    id: T,
+}
+
+pub fn serialize_response<T>(data: &T, status_code: StatusCode) -> HttpResponse<BoxBody>
+where
+    T: Serialize,
+{
+    let body_str: String;
+
+    let status: StatusCode;
+
+    match serde_json::to_string(data) {
+        Ok(enc) => {
+            status = status_code;
+            body_str = enc;
+        }
+        Err(_) => {
+            status = StatusCode::INTERNAL_SERVER_ERROR;
+            body_str = ENCODING_FAILED_BODY.to_string();
+        }
+    };
+
+    HttpResponse::build(status)
+        .content_type(ContentType::json())
+        .body(body_str)
+}
+
+#[inline(always)]
+fn code_from_method(method: Method) -> StatusCode {
+    match method {
+        Method::POST => StatusCode::CREATED,
+        _ => StatusCode::OK,
+    }
+}
+
+#[derive(Serialize, Deserialize)]
+pub struct ErrorResponseBody {
+    error: String,
+}
+
+impl ErrorResponseBody {
+    pub fn from<T: ToString>(el: T) -> Self {
+        Self {
+            error: el.to_string(),
+        }
+    }
+}
+
 impl<T: Serialize> DataBody<T> {
     pub fn new(data: T, msg: &str) -> DataBody<T> {
         DataBody {
@@ -27,29 +77,6 @@ impl<T: Serialize> Responder for DataBody<T> {
     type Body = BoxBody;
 
     fn respond_to(self, req: &actix_web::HttpRequest) -> actix_web::HttpResponse<Self::Body> {
-        let body_str: String;
-        let status_code: StatusCode;
-
-        match serde_json::to_string(&self) {
-            Ok(enc) => {
-                match req.method().into() {
-                    Method::POST => {
-                        status_code = StatusCode::CREATED;
-                    }
-                    _ => {
-                        status_code = StatusCode::OK;
-                    }
-                }
-                body_str = enc;
-            }
-            Err(_) => {
-                status_code = StatusCode::INTERNAL_SERVER_ERROR;
-                body_str = ENCODING_FAILED_BODY.to_string();
-            }
-        };
-
-        HttpResponse::build(status_code)
-            .content_type(ContentType::json())
-            .body(body_str)
+        serialize_response(&self, code_from_method(req.method().into()))
     }
 }
