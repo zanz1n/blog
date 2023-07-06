@@ -555,6 +555,22 @@ dependencies = [
 ]
 
 [[package]]
+name = "blog"
+version = "0.1.0"
+dependencies = [
+ "actix-cors",
+ "actix-web",
+ "dotenvy",
+ "env_logger",
+ "log",
+ "sea-orm 0.9.3",
+ "serde",
+ "serde_json",
+ "thiserror",
+ "tokio",
+]
+
+[[package]]
 name = "borsh"
 version = "0.10.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -825,22 +841,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "5a22b2d63d4d1dc0b7f1b6b2747dd0088008a9be28b6ddf0b1e7d335e3037294"
 dependencies = [
  "cfg-if",
-]
-
-[[package]]
-name = "crud1"
-version = "0.1.0"
-dependencies = [
- "actix-cors",
- "actix-web",
- "dotenvy",
- "env_logger",
- "log",
- "sea-orm 0.9.3",
- "serde",
- "serde_json",
- "thiserror",
- "tokio",
 ]
 
 [[package]]
