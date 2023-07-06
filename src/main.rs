@@ -1,6 +1,8 @@
 mod db;
 mod env;
 mod model;
+mod repository;
+mod routes;
 mod utils;
 
 use std::{io::Error, time::Duration};
@@ -9,6 +11,8 @@ use actix_cors::Cors;
 use actix_web::{middleware, web::Data, App, HttpServer};
 use db::connect_to_postgres;
 use env::{env_param, ProcessEnv};
+use repository::user::UserRepository;
+use routes::user;
 use sea_orm::{ConnectOptions, DatabaseConnection};
 
 #[tokio::main]
@@ -49,7 +53,7 @@ async fn main() -> Result<(), Error> {
             connection_opts.sqlx_logging_level(log::LevelFilter::Debug);
         }
         _ => {
-            connection_opts.sqlx_logging_level(log::LevelFilter::Info);
+            connection_opts.sqlx_logging(false);
         }
     };
 
@@ -57,7 +61,7 @@ async fn main() -> Result<(), Error> {
 
     // Using the box structure to allow multi-thread access to the
     // DatabaseConnection instance.
-    let db_box: &DatabaseConnection = Box::leak(Box::new(db));
+    let db_box: &'static DatabaseConnection = Box::leak(Box::new(db));
 
     // Actix web config boilerplate
     HttpServer::new(move || {
@@ -70,13 +74,17 @@ async fn main() -> Result<(), Error> {
             .allow_any_header()
             .max_age(60 * 60); // 1 hour (Access-Control-Max-Age header)
 
-        let db_data = Data::new(db_box);
+        let user_repo = UserRepository::new(db_box);
+
+        let user_repo = Data::new(user_repo);
 
         App::new()
-            .app_data(db_data)
+            .app_data(user_repo)
             .wrap(actix_logger)
             .wrap(actix_path_normalizer)
             .wrap(actix_cors)
+            .service(user::get_by_id)
+            .service(user::create)
     })
     .workers(actix_workers)
     .bind(format!("0.0.0.0:{}", port))?
