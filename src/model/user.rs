@@ -38,7 +38,9 @@ impl ActiveModelBehavior for ActiveModel {}
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct ApiUser {
     pub id: String,
+    #[serde(rename = "createdAt")]
     pub created_at: DateTime,
+    #[serde(rename = "updatedAt")]
     pub updated_at: DateTime,
     pub email: String,
     pub username: String,
