@@ -26,12 +26,7 @@ impl MigrationTrait for Migration {
                             .unique_key()
                             .not_null(),
                     )
-                    .col(
-                        ColumnDef::new(User::Username)
-                            .string_len(24)
-                            .unique_key()
-                            .not_null(),
-                    )
+                    .col(ColumnDef::new(User::Username).string_len(42).not_null())
                     .col(ColumnDef::new(User::Password).string_len(255).not_null())
                     .to_owned(),
             )
@@ -41,8 +36,8 @@ impl MigrationTrait for Migration {
             .create_index(
                 Index::create()
                     .table(User::Table)
+                    .unique()
                     .col(User::Email)
-                    .col(User::Username)
                     .to_owned(),
             )
             .await?;

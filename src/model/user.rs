@@ -15,7 +15,7 @@ pub struct Model {
     pub updated_at: DateTime,
     #[sea_orm(column_type = "String(Some(64))", unique, indexed)]
     pub email: String,
-    #[sea_orm(column_type = "String(Some(24))", unique, indexed)]
+    #[sea_orm(column_type = "String(Some(42))")]
     pub username: String,
     #[sea_orm(column_type = "String(Some(255))")]
     pub password: String,
