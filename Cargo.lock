@@ -839,6 +839,7 @@ dependencies = [
  "sea-orm 0.9.3",
  "serde",
  "serde_json",
+ "thiserror",
  "tokio",
 ]
 
