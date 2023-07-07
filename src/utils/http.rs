@@ -1,8 +1,12 @@
+use std::fmt::Display;
+
 use actix_web::{
     body::BoxBody,
     http::{header::ContentType, Method, StatusCode},
-    HttpResponse, Responder,
+    web::JsonConfig,
+    HttpResponse, Responder, ResponseError,
 };
+
 use serde::{Deserialize, Serialize};
 
 pub const ENCODING_FAILED_BODY: &'static str =
@@ -39,6 +43,7 @@ where
             body_str = enc;
         }
         Err(_) => {
+            log::warn!("Failed to encode response body");
             status = StatusCode::INTERNAL_SERVER_ERROR;
             body_str = ENCODING_FAILED_BODY.to_string();
         }
@@ -57,7 +62,7 @@ fn code_from_method(method: Method) -> StatusCode {
     }
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Default, Debug, Serialize, Deserialize)]
 pub struct ErrorResponseBody {
     error: String,
 }
@@ -67,6 +72,22 @@ impl ErrorResponseBody {
         Self {
             error: el.to_string(),
         }
+    }
+}
+
+impl Display for ErrorResponseBody {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str(format!("{:?}", self).as_str())
+    }
+}
+
+impl ResponseError for ErrorResponseBody {
+    fn status_code(&self) -> StatusCode {
+        StatusCode::BAD_REQUEST
+    }
+
+    fn error_response(&self) -> HttpResponse<BoxBody> {
+        serialize_response(&self, self.status_code())
     }
 }
 
@@ -85,4 +106,16 @@ impl<T: Serialize> Responder for DataBody<T> {
     fn respond_to(self, req: &actix_web::HttpRequest) -> actix_web::HttpResponse<Self::Body> {
         serialize_response(&self, code_from_method(req.method().into()))
     }
+}
+
+#[inline]
+pub fn app_json_error_handler() -> JsonConfig {
+    JsonConfig::default()
+        .limit(4096) // 4kb
+        .content_type_required(false)
+        .content_type(|m| {
+            (m.type_() == "text" && m.subtype() == "plain")
+                || (m.type_() == "application" && m.subtype() == "json")
+        })
+        .error_handler(|a, _| ErrorResponseBody::from(a).into())
 }

@@ -14,6 +14,7 @@ use env::{env_param, ProcessEnv};
 use repository::user::UserRepository;
 use routes::user;
 use sea_orm::{ConnectOptions, DatabaseConnection};
+use utils::http::app_json_error_handler;
 
 #[tokio::main]
 async fn main() -> Result<(), Error> {
@@ -71,6 +72,7 @@ async fn main() -> Result<(), Error> {
         let user_repo = Data::new(user_repo);
 
         App::new()
+            .app_data(app_json_error_handler())
             .app_data(user_repo)
             .wrap(actix_logger)
             .wrap(actix_path_normalizer)
