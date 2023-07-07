@@ -32,6 +32,8 @@ pub enum UserError {
     InvalidData,
     #[error("User already exists, maybe try a different email")]
     AlreadyExists,
+    #[error("Password do not match or user doesn't exist")]
+    Unauthorized,
 }
 
 impl ResponseError for UserError {
