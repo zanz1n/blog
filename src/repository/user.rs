@@ -169,7 +169,7 @@ impl UserRepository {
         };
 
         let user = ActiveModel {
-            id: Unchanged(id),
+            id: Unchanged(id.clone()),
             created_at: NotSet,
             email: NotSet,
             password: NotSet,
@@ -177,11 +177,23 @@ impl UserRepository {
             username: NotSet,
         };
 
-        match user.delete(self.db).await {
-            Ok(_) => {}
-            Err(err) => return Err(db_to_user_error(err, UserError::NotFound)),
+        let result = match user.delete(self.db).await {
+            Ok(r) => r,
+            Err(_) => return Err(UserError::InternalServerError),
         };
 
-        Ok(())
+        match result.rows_affected {
+            0 => Err(UserError::NotFound),
+            1 => Ok(()),
+            i => {
+                log::info!(
+                    target: "database_user",
+                    "User {} deletion affected other {} rows",
+                    id,
+                    i - 1
+                );
+                Ok(())
+            }
+        }
     }
 }
