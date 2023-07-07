@@ -1,4 +1,4 @@
-use super::user::{UserError, UserRepository};
+use super::user::{UserError};
 use crate::model::user::{Column as UserColumn, Entity as UserEntity};
 use jsonwebtoken::{Algorithm, EncodingKey, Header};
 use sea_orm::DatabaseConnection;
@@ -27,7 +27,6 @@ impl UserJwtPayload {
 pub struct AuthProvider {
     db: &'static DatabaseConnection,
     key: EncodingKey,
-    user_repo: UserRepository,
 }
 
 pub const JWT_ALGORITHM: Algorithm = Algorithm::HS512;
@@ -37,7 +36,6 @@ impl AuthProvider {
         Self {
             key,
             db,
-            user_repo: UserRepository::new(db),
         }
     }
 
