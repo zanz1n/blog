@@ -79,6 +79,8 @@ async fn main() -> Result<(), Error> {
             .wrap(actix_cors)
             .service(user::get_by_id)
             .service(user::create)
+            .service(user::update_user)
+            .service(user::delete_user)
     })
     .workers(actix_workers)
     .bind(format!("0.0.0.0:{}", port))?
