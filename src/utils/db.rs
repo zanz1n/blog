@@ -56,6 +56,12 @@ pub fn timestamp_now() -> Option<DateTime> {
 pub async fn hash_password(password: String) -> Result<String, UserError> {
     spawn_blocking(|| bcrypt::hash(password, 12))
         .await
-        .or_else(|_| Err(UserError::InternalServerError))?
-        .or_else(|_| Err(UserError::InternalServerError))
+        .or_else(|e| {
+            log::error!(target: "tokio_runtime_error", "{}", e);
+            Err(UserError::InternalServerError)
+        })?
+        .or_else(|e| {
+            log::error!(target: "jwt_error", "{}", e);
+            Err(UserError::InternalServerError)
+        })
 }
