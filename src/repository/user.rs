@@ -2,7 +2,7 @@ use crate::{
     model::user::Entity as UserEntity,
     model::user::{ActiveModel, Model as UserModel},
     utils::{
-        db::{db_to_user_error, random_user_id, timestamp_now},
+        db::{db_to_user_error, hash_password, random_user_id, timestamp_now},
         http::{serialize_response, ErrorResponseBody},
     },
 };
@@ -120,10 +120,12 @@ impl UserRepository {
             }
         };
 
+        let password = hash_password(data.password).await?;
+
         let user = ActiveModel {
             id: Set(random_user_id()),
             email: Set(data.email),
-            password: Set(data.password),
+            password: Set(password),
             username: Set(data.username),
             created_at: Set(now),
             updated_at: Set(now),
