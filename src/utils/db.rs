@@ -1,8 +1,7 @@
-use std::time::{SystemTime, UNIX_EPOCH};
-
-use sea_orm::{prelude::DateTime, DbErr};
-
 use crate::repository::user::UserError;
+use sea_orm::{prelude::DateTime, DbErr};
+use std::time::{SystemTime, UNIX_EPOCH};
+use tokio::task::spawn_blocking;
 
 const USER_ID_SIZE: usize = 18;
 const POST_ID_SIZE: usize = 24;
@@ -52,4 +51,11 @@ pub fn now_unix_i64() -> Option<i64> {
 pub fn timestamp_now() -> Option<DateTime> {
     let now_ms = now_unix_i64()?;
     DateTime::from_timestamp_millis(now_ms)
+}
+
+pub async fn hash_password(password: String) -> Result<String, UserError> {
+    spawn_blocking(|| bcrypt::hash(password, 12))
+        .await
+        .or_else(|_| Err(UserError::InternalServerError))?
+        .or_else(|_| Err(UserError::InternalServerError))
 }
