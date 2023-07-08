@@ -1,5 +1,6 @@
 use super::user::UserError;
 use crate::model::user::{Column as UserColumn, Entity as UserEntity};
+use crate::utils::generic::now_unix;
 use jsonwebtoken::{Algorithm, EncodingKey, Header};
 use sea_orm::DatabaseConnection;
 use sea_orm::{ColumnTrait, EntityTrait, QueryFilter, QuerySelect};
@@ -8,18 +9,23 @@ use tokio::task::spawn_blocking;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct UserJwtPayload {
-    #[serde(rename = "userId")]
-    id: String,
+    sub: String,
     username: String,
     email: String,
+    exp: u128,
+    iat: u128,
 }
 
 impl UserJwtPayload {
     fn new(id: String, username: String, email: String) -> Self {
+        let now = now_unix();
+
         Self {
-            id,
+            sub: id,
             username,
             email,
+            exp: (now + (60 * 60 * 1000)),
+            iat: now,
         }
     }
 }
@@ -29,7 +35,7 @@ pub struct AuthProvider {
     key: EncodingKey,
 }
 
-pub const JWT_ALGORITHM: Algorithm = Algorithm::HS512;
+pub const JWT_ALGORITHM: Algorithm = Algorithm::RS256;
 
 impl AuthProvider {
     pub fn new(db: &'static DatabaseConnection, key: EncodingKey) -> Self {
@@ -52,7 +58,10 @@ impl AuthProvider {
                 log::error!(target: "tokio_runtime_error", "{}", e);
                 Err(UserError::InternalServerError)
             })?
-            .or_else(|_| Err(UserError::InternalServerError))
+            .or_else(|e| {
+                log::error!(target: "jwt_error", "{}", e);
+                Err(UserError::InternalServerError)
+            })
     }
 
     pub async fn auth_user(&self, email: String, password: String) -> Result<String, UserError> {

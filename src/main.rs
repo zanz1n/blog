@@ -1,4 +1,5 @@
 mod env;
+mod middlewares;
 mod model;
 mod repository;
 mod routes;
@@ -9,9 +10,10 @@ use actix_web::{middleware, web::Data, App, HttpServer};
 use env::{env_param, ProcessEnv};
 use jsonwebtoken::EncodingKey;
 use repository::{auth::AuthProvider, user::UserRepository};
-use routes::user;
+use routes::{auth, user};
 use sea_orm::{ConnectOptions, Database, DatabaseConnection};
 use std::{
+    fs,
     io::{Error, ErrorKind},
     time::Duration,
 };
@@ -41,7 +43,10 @@ async fn main() -> Result<(), Error> {
     let max_db_conns = env_param::<u32>("MAX_DB_CONNECTIONS", None);
     let db_conn_timeout = env_param::<u64>("DB_CONNECT_TIMEOUT", Some(5));
     let db_conn_idle_timeout = env_param::<u64>("DB_CONN_IDLE_TIMEOUT", Some(10));
-    let jwt_secret_key = env_param::<String>("JWT_KEY", None);
+    let jwt_key = env_param::<String>("JWT_KEY", None);
+
+    let jwt_key = EncodingKey::from_rsa_pem(&fs::read(jwt_key)?)
+        .or_else(|e| Err(Error::new(ErrorKind::InvalidInput, e)))?;
 
     let mut connection_opts = ConnectOptions::new(database_uri).to_owned();
 
@@ -62,8 +67,6 @@ async fn main() -> Result<(), Error> {
 
     // Actix web config boilerplate
     HttpServer::new(move || {
-        let jwt_secret_key = jwt_secret_key.clone();
-
         // Setting up app middlewares
         let actix_logger = middleware::Logger::new("%{r}a %r %s %Dms").log_target("http_log");
         let actix_path_normalizer = middleware::NormalizePath::trim();
@@ -76,8 +79,7 @@ async fn main() -> Result<(), Error> {
         let user_repo = UserRepository::new(db_box);
         let user_repo = Data::new(user_repo);
 
-        let auth_service =
-            AuthProvider::new(db_box, EncodingKey::from_secret(jwt_secret_key.as_bytes()));
+        let auth_service = AuthProvider::new(db_box, jwt_key.clone());
         let auth_service = Data::new(auth_service);
 
         App::new()
@@ -91,6 +93,8 @@ async fn main() -> Result<(), Error> {
             .service(user::create)
             .service(user::update_user)
             .service(user::delete_user)
+            .service(auth::signin)
+            .service(auth::signup)
     })
     .workers(actix_workers)
     .bind(format!("0.0.0.0:{}", port))?
