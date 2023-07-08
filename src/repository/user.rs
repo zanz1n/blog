@@ -34,6 +34,10 @@ pub enum UserError {
     AlreadyExists,
     #[error("Password do not match or user doesn't exist")]
     Unauthorized,
+    #[error("Your jwt token does not contain valid metadata. Invalid")]
+    InvalidAuthToken,
+    #[error("Your jwt token is no longer valid. Expired")]
+    ExpiredAuthToken,
 }
 
 impl ResponseError for UserError {

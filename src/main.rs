@@ -8,7 +8,7 @@ mod utils;
 use actix_cors::Cors;
 use actix_web::{middleware, web::Data, App, HttpServer};
 use env::{env_param, ProcessEnv};
-use jsonwebtoken::EncodingKey;
+use jsonwebtoken::{DecodingKey, EncodingKey};
 use repository::{auth::AuthProvider, user::UserRepository};
 use routes::{auth, user};
 use sea_orm::{ConnectOptions, Database, DatabaseConnection};
@@ -44,8 +44,15 @@ async fn main() -> Result<(), Error> {
     let db_conn_timeout = env_param::<u64>("DB_CONNECT_TIMEOUT", Some(5));
     let db_conn_idle_timeout = env_param::<u64>("DB_CONN_IDLE_TIMEOUT", Some(10));
     let jwt_key = env_param::<String>("JWT_KEY_FILE", None);
+    let jwt_pub = env_param::<String>("JWT_PUB_FILE", None);
 
-    let jwt_key = EncodingKey::from_ed_pem(&fs::read(jwt_key)?)
+    let jwt_key = fs::read(jwt_key)?;
+    let jwt_pub = fs::read(jwt_pub)?;
+
+    let jwt_enc_key = EncodingKey::from_ed_pem(&jwt_key)
+        .or_else(|e| Err(Error::new(ErrorKind::InvalidInput, e)))?;
+
+    let jwt_dec_key = DecodingKey::from_ed_pem(&jwt_pub)
         .or_else(|e| Err(Error::new(ErrorKind::InvalidInput, e)))?;
 
     let mut connection_opts = ConnectOptions::new(database_uri).to_owned();
@@ -79,7 +86,7 @@ async fn main() -> Result<(), Error> {
         let user_repo = UserRepository::new(db_box);
         let user_repo = Data::new(user_repo);
 
-        let auth_service = AuthProvider::new(db_box, jwt_key.clone());
+        let auth_service = AuthProvider::new(db_box, jwt_enc_key.clone(), jwt_dec_key.clone());
         let auth_service = Data::new(auth_service);
 
         App::new()
