@@ -1,12 +1,11 @@
-use actix_web::{
-    delete, get, post, put,
-    web::{Data, Json, Path},
-};
-
 use crate::{
     model::user::ApiUser,
     repository::user::{CreateUserData, UpdateEmailData, UserError, UserRepository},
     utils::http::{DataBody, PathWithId},
+};
+use actix_web::{
+    delete, get, post, put,
+    web::{Data, Json, Path},
 };
 
 #[get("/user/{id}")]

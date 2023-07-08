@@ -4,7 +4,7 @@ use crate::{
         auth::AuthProvider,
         user::{CreateUserData, UserError, UserRepository},
     },
-    utils::http::{serialize_response, DataBody},
+    utils::http::serialize_response,
 };
 use actix_web::{
     body::BoxBody,

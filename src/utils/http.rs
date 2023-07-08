@@ -1,13 +1,11 @@
-use std::fmt::Display;
-
 use actix_web::{
     body::BoxBody,
     http::{header::ContentType, Method, StatusCode},
     web::JsonConfig,
     HttpResponse, Responder, ResponseError,
 };
-
 use serde::{Deserialize, Serialize};
+use std::fmt::Display;
 
 pub const ENCODING_FAILED_BODY: &'static str =
     "{\"error\":\"The intended response body could not be encoded, this occurrence was logged\"}";

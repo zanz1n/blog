@@ -1,8 +1,7 @@
+use crate::utils::http::DataBody;
 use actix_web::body::BoxBody;
 use sea_orm::prelude::*;
 use serde::{Deserialize, Serialize};
-
-use crate::utils::http::DataBody;
 
 #[derive(Clone, Debug, PartialEq, DeriveEntityModel, Serialize, Deserialize)]
 #[sea_orm(table_name = "users", schema_name = "public")]

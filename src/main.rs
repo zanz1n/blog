@@ -1,4 +1,3 @@
-mod db;
 mod env;
 mod model;
 mod repository;
