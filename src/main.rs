@@ -5,15 +5,17 @@ mod repository;
 mod routes;
 mod utils;
 
-use std::{io::Error, time::Duration};
-
 use actix_cors::Cors;
 use actix_web::{middleware, web::Data, App, HttpServer};
-use db::connect_to_postgres;
 use env::{env_param, ProcessEnv};
-use repository::user::UserRepository;
+use jsonwebtoken::EncodingKey;
+use repository::{auth::AuthProvider, user::UserRepository};
 use routes::user;
-use sea_orm::{ConnectOptions, DatabaseConnection};
+use sea_orm::{ConnectOptions, Database, DatabaseConnection};
+use std::{
+    io::{Error, ErrorKind},
+    time::Duration,
+};
 use utils::http::app_json_error_handler;
 
 #[tokio::main]
@@ -40,6 +42,7 @@ async fn main() -> Result<(), Error> {
     let max_db_conns = env_param::<u32>("MAX_DB_CONNECTIONS", None);
     let db_conn_timeout = env_param::<u64>("DB_CONNECT_TIMEOUT", Some(5));
     let db_conn_idle_timeout = env_param::<u64>("DB_CONN_IDLE_TIMEOUT", Some(10));
+    let jwt_secret_key = env_param::<String>("JWT_KEY", None);
 
     let mut connection_opts = ConnectOptions::new(database_uri).to_owned();
 
@@ -50,7 +53,9 @@ async fn main() -> Result<(), Error> {
         .idle_timeout(Duration::from_secs(db_conn_idle_timeout))
         .sqlx_logging_level(log::LevelFilter::Debug);
 
-    let db = connect_to_postgres(connection_opts).await?;
+    let db = Database::connect(connection_opts)
+        .await
+        .or_else(|e| Err(Error::new(ErrorKind::ConnectionRefused, e)))?;
 
     // Using the box structure to allow multi-thread access to the
     // DatabaseConnection instance.
@@ -58,6 +63,8 @@ async fn main() -> Result<(), Error> {
 
     // Actix web config boilerplate
     HttpServer::new(move || {
+        let jwt_secret_key = jwt_secret_key.clone();
+
         // Setting up app middlewares
         let actix_logger = middleware::Logger::new("%{r}a %r %s %Dms").log_target("http_log");
         let actix_path_normalizer = middleware::NormalizePath::trim();
@@ -68,12 +75,16 @@ async fn main() -> Result<(), Error> {
             .max_age(60 * 60); // 1 hour (Access-Control-Max-Age header)
 
         let user_repo = UserRepository::new(db_box);
-
         let user_repo = Data::new(user_repo);
+
+        let auth_service =
+            AuthProvider::new(db_box, EncodingKey::from_secret(jwt_secret_key.as_bytes()));
+        let auth_service = Data::new(auth_service);
 
         App::new()
             .app_data(app_json_error_handler())
             .app_data(user_repo)
+            .app_data(auth_service)
             .wrap(actix_logger)
             .wrap(actix_path_normalizer)
             .wrap(actix_cors)
