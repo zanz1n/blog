@@ -43,9 +43,9 @@ async fn main() -> Result<(), Error> {
     let max_db_conns = env_param::<u32>("MAX_DB_CONNECTIONS", None);
     let db_conn_timeout = env_param::<u64>("DB_CONNECT_TIMEOUT", Some(5));
     let db_conn_idle_timeout = env_param::<u64>("DB_CONN_IDLE_TIMEOUT", Some(10));
-    let jwt_key = env_param::<String>("JWT_KEY", None);
+    let jwt_key = env_param::<String>("JWT_KEY_FILE", None);
 
-    let jwt_key = EncodingKey::from_rsa_pem(&fs::read(jwt_key)?)
+    let jwt_key = EncodingKey::from_ed_pem(&fs::read(jwt_key)?)
         .or_else(|e| Err(Error::new(ErrorKind::InvalidInput, e)))?;
 
     let mut connection_opts = ConnectOptions::new(database_uri).to_owned();

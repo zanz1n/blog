@@ -1,6 +1,6 @@
 use super::user::UserError;
 use crate::model::user::{Column as UserColumn, Entity as UserEntity};
-use crate::utils::generic::now_unix;
+use crate::utils::generic::now_unix_sec;
 use jsonwebtoken::{Algorithm, EncodingKey, Header};
 use sea_orm::DatabaseConnection;
 use sea_orm::{ColumnTrait, EntityTrait, QueryFilter, QuerySelect};
@@ -12,19 +12,19 @@ pub struct UserJwtPayload {
     sub: String,
     username: String,
     email: String,
-    exp: u128,
-    iat: u128,
+    exp: u64,
+    iat: u64,
 }
 
 impl UserJwtPayload {
     fn new(id: String, username: String, email: String) -> Self {
-        let now = now_unix();
+        let now = now_unix_sec();
 
         Self {
             sub: id,
             username,
             email,
-            exp: (now + (60 * 60 * 1000)),
+            exp: (now + (60 * 60)),
             iat: now,
         }
     }
@@ -35,7 +35,7 @@ pub struct AuthProvider {
     key: EncodingKey,
 }
 
-pub const JWT_ALGORITHM: Algorithm = Algorithm::RS256;
+pub const JWT_ALGORITHM: Algorithm = Algorithm::EdDSA;
 
 impl AuthProvider {
     pub fn new(db: &'static DatabaseConnection, key: EncodingKey) -> Self {
