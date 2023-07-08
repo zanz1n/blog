@@ -30,8 +30,6 @@ impl UserJwtPayload {
     }
 }
 
-struct Addr(pub [u8; 4], pub u16);
-
 pub struct AuthProvider {
     db: &'static DatabaseConnection,
     enc_key: EncodingKey,
