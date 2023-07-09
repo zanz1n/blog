@@ -1,4 +1,4 @@
-use super::user::UserError;
+use crate::error::ApiError;
 use crate::model::user::{Column as UserColumn, Entity as UserEntity};
 use crate::utils::generic::now_unix_sec;
 use jsonwebtoken::{Algorithm, DecodingKey, EncodingKey, Header, TokenData, Validation};
@@ -60,7 +60,7 @@ impl AuthProvider {
         id: String,
         email: String,
         username: String,
-    ) -> Result<String, UserError> {
+    ) -> Result<String, ApiError> {
         let claims = UserJwtPayload::new(id, username, email);
 
         let key = self.enc_key.clone();
@@ -69,32 +69,32 @@ impl AuthProvider {
             .await
             .or_else(|e| {
                 log::error!(target: "tokio_runtime_error", "{}", e);
-                Err(UserError::InternalServerError)
+                Err(ApiError::InternalServerError)
             })?
             .or_else(|e| {
                 log::error!(target: "jwt_error", "{}", e);
-                Err(UserError::InternalServerError)
+                Err(ApiError::InternalServerError)
             })
     }
 
     // Implement later
-    pub async fn is_under_invalidation(&self, _id: String) -> Result<bool, UserError> {
+    pub async fn is_under_invalidation(&self, _id: String) -> Result<bool, ApiError> {
         Ok(false)
     }
 
-    pub async fn decode_token(&self, token: String) -> Result<UserJwtPayload, UserError> {
+    pub async fn decode_token(&self, token: String) -> Result<UserJwtPayload, ApiError> {
         let key = self.dec_key.clone();
         let validation = self.validation.clone();
 
         let token = spawn_blocking(move || {
             let token: TokenData<UserJwtPayload> =
                 jsonwebtoken::decode(token.as_str(), &key, &validation)
-                    .or_else(|_| Err(UserError::InvalidAuthToken))?;
+                    .or_else(|_| Err(ApiError::InvalidAuthToken))?;
 
             if token.header.alg != JWT_ALGORITHM {
-                Err(UserError::InvalidAuthToken)
+                Err(ApiError::InvalidAuthToken)
             } else if token.claims.exp < now_unix_sec() {
-                Err(UserError::ExpiredAuthToken)
+                Err(ApiError::ExpiredAuthToken)
             } else {
                 Ok(token.claims)
             }
@@ -102,41 +102,41 @@ impl AuthProvider {
         .await
         .or_else(|e| {
             log::error!(target: "tokio_runtime_error", "{}", e);
-            Err(UserError::InternalServerError)
+            Err(ApiError::InternalServerError)
         })??;
 
         if self.is_under_invalidation(token.sub.clone()).await? {
-            Err(UserError::InvalidAuthToken)
+            Err(ApiError::InvalidAuthToken)
         } else {
             Ok(token)
         }
     }
 
-    pub async fn auth_user(&self, email: String, password: String) -> Result<String, UserError> {
+    pub async fn auth_user(&self, email: String, password: String) -> Result<String, ApiError> {
         let user = UserEntity::find()
             .filter(UserColumn::Email.eq(email.clone()))
             .column(UserColumn::Username)
             .column(UserColumn::Password)
             .one(self.db)
             .await
-            .or_else(|_| Err(UserError::Unauthorized))?;
+            .or_else(|_| Err(ApiError::UserUnauthorized))?;
 
         let user = match user {
             Some(user) => user,
-            None => return Err(UserError::Unauthorized),
+            None => return Err(ApiError::UserUnauthorized),
         };
 
         let can_auth = spawn_blocking(move || {
             bcrypt::verify(password, user.password.as_str()).or_else(|e| {
                 log::error!(target: "bcrypt_error", "{}", e);
 
-                Err(UserError::InternalServerError)
+                Err(ApiError::InternalServerError)
             })
         })
         .await
         .or_else(|e| {
             log::error!(target: "tokio_runtime_error", "{}", e);
-            Err(UserError::InternalServerError)
+            Err(ApiError::InternalServerError)
         })?;
 
         let can_auth = match can_auth {
@@ -147,7 +147,7 @@ impl AuthProvider {
         if can_auth {
             self.generate_token(user.id, email, user.username).await
         } else {
-            Err(UserError::Unauthorized)
+            Err(ApiError::UserUnauthorized)
         }
     }
 }

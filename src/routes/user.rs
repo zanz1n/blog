@@ -1,6 +1,7 @@
 use crate::{
+    error::ApiError,
     model::user::ApiUser,
-    repository::user::{CreateUserData, UpdateEmailData, UserError, UserRepository},
+    repository::user::{CreateUserData, UpdateEmailData, UserRepository},
     utils::http::{DataBody, PathWithId},
 };
 use actix_web::{
@@ -12,7 +13,7 @@ use actix_web::{
 async fn get_by_id(
     user_repo: Data<UserRepository>,
     path_params: Path<PathWithId<String>>,
-) -> Result<ApiUser, UserError> {
+) -> Result<ApiUser, ApiError> {
     let user = user_repo.get_by_id(path_params.id()).await?;
 
     Ok(user.to_sendable())
@@ -22,7 +23,7 @@ async fn get_by_id(
 async fn create(
     user_repo: Data<UserRepository>,
     data: Json<CreateUserData>,
-) -> Result<ApiUser, UserError> {
+) -> Result<ApiUser, ApiError> {
     let user = user_repo.create(data.0).await?;
 
     Ok(user.to_sendable())
@@ -33,7 +34,7 @@ async fn update_user(
     user_repo: Data<UserRepository>,
     data: Json<UpdateEmailData>,
     path_params: Path<PathWithId<String>>,
-) -> Result<ApiUser, UserError> {
+) -> Result<ApiUser, ApiError> {
     let user = user_repo
         .update_username(path_params.id.clone(), data.0)
         .await?;
@@ -45,7 +46,7 @@ async fn update_user(
 async fn delete_user(
     user_repo: Data<UserRepository>,
     path_params: Path<PathWithId<String>>,
-) -> Result<DataBody<Option<u8>>, UserError> {
+) -> Result<DataBody<Option<u8>>, ApiError> {
     user_repo.delete(path_params.id.clone()).await?;
 
     Ok(DataBody::new(None, "Deleted"))

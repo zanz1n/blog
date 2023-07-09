@@ -2,9 +2,9 @@ use crate::{
     model::user::ApiUser,
     repository::{
         auth::AuthProvider,
-        user::{CreateUserData, UserError, UserRepository},
+        user::{CreateUserData, UserRepository},
     },
-    utils::http::serialize_response,
+    utils::http::serialize_response, error::ApiError,
 };
 use actix_web::{
     body::BoxBody,
@@ -53,7 +53,7 @@ impl Responder for SignUpResponseBody {
 pub async fn signin(
     auth_provider: Data<AuthProvider>,
     body: Json<SignInRequestBody>,
-) -> Result<SignInResponseBody, UserError> {
+) -> Result<SignInResponseBody, ApiError> {
     let body = body.0;
 
     auth_provider
@@ -67,7 +67,7 @@ pub async fn signup(
     auth_provider: Data<AuthProvider>,
     user_repo: Data<UserRepository>,
     body: Json<CreateUserData>,
-) -> Result<CustomizeResponder<SignUpResponseBody>, UserError> {
+) -> Result<CustomizeResponder<SignUpResponseBody>, ApiError> {
     let user = user_repo.create(body.0).await?;
 
     let token = auth_provider

@@ -1,5 +1,5 @@
 mod env;
-mod middlewares;
+mod error;
 mod model;
 mod repository;
 mod routes;

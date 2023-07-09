@@ -1,4 +1,4 @@
-use crate::repository::user::UserError;
+use crate::error::ApiError;
 use sea_orm::{prelude::DateTime, DbErr};
 use std::time::{SystemTime, UNIX_EPOCH};
 use tokio::task::spawn_blocking;
@@ -22,15 +22,15 @@ pub fn random_post_id() -> String {
 }
 
 #[inline]
-pub fn db_to_user_error(db_err: DbErr, expect: UserError) -> UserError {
+pub fn db_to_user_error(db_err: DbErr, expect: ApiError) -> ApiError {
     log::info!(target: "database_user_errors", "{}", db_err.to_string());
 
     match db_err {
         DbErr::Exec(_) => expect,
-        DbErr::Type(_) => UserError::InvalidData,
+        DbErr::Type(_) => ApiError::InvalidUserData,
         DbErr::Query(_) => expect,
-        DbErr::RecordNotFound(_) => UserError::NotFound,
-        _ => UserError::InternalServerError,
+        DbErr::RecordNotFound(_) => ApiError::UserNotFound,
+        _ => ApiError::InternalServerError,
     }
 }
 
@@ -53,15 +53,15 @@ pub fn timestamp_now() -> Option<DateTime> {
     DateTime::from_timestamp_millis(now_ms)
 }
 
-pub async fn hash_password(password: String) -> Result<String, UserError> {
+pub async fn hash_password(password: String) -> Result<String, ApiError> {
     spawn_blocking(|| bcrypt::hash(password, 12))
         .await
         .or_else(|e| {
             log::error!(target: "tokio_runtime_error", "{}", e);
-            Err(UserError::InternalServerError)
+            Err(ApiError::InternalServerError)
         })?
         .or_else(|e| {
             log::error!(target: "bcrypt_error", "{}", e);
-            Err(UserError::InternalServerError)
+            Err(ApiError::InternalServerError)
         })
 }
