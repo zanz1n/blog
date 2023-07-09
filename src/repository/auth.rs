@@ -88,10 +88,8 @@ impl AuthProvider {
 
         let token = spawn_blocking(move || {
             let token: TokenData<UserJwtPayload> =
-                jsonwebtoken::decode(token.as_str(), &key, &validation).or_else(|e| {
-                    log::error!(target: "jwt_error", "{}", e);
-                    Err(UserError::InternalServerError)
-                })?;
+                jsonwebtoken::decode(token.as_str(), &key, &validation)
+                    .or_else(|_| Err(UserError::InvalidAuthToken))?;
 
             if token.header.alg != JWT_ALGORITHM {
                 Err(UserError::InvalidAuthToken)

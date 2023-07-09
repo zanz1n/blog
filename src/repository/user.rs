@@ -38,6 +38,8 @@ pub enum UserError {
     InvalidAuthToken,
     #[error("Your jwt token is no longer valid. Expired")]
     ExpiredAuthToken,
+    #[error("This route requires authorization but no headers or cookies was provided")]
+    AuthorizationRequired,
 }
 
 impl ResponseError for UserError {
@@ -46,6 +48,8 @@ impl ResponseError for UserError {
             Self::NotFound => StatusCode::NOT_FOUND,
             Self::InternalServerError => StatusCode::INTERNAL_SERVER_ERROR,
             Self::AlreadyExists => StatusCode::CONFLICT,
+            Self::Unauthorized => StatusCode::UNAUTHORIZED,
+            Self::AuthorizationRequired => StatusCode::UNAUTHORIZED,
             _ => StatusCode::BAD_REQUEST,
         }
     }

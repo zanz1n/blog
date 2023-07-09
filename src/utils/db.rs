@@ -61,7 +61,7 @@ pub async fn hash_password(password: String) -> Result<String, UserError> {
             Err(UserError::InternalServerError)
         })?
         .or_else(|e| {
-            log::error!(target: "jwt_error", "{}", e);
+            log::error!(target: "bcrypt_error", "{}", e);
             Err(UserError::InternalServerError)
         })
 }
