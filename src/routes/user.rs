@@ -1,5 +1,6 @@
 use crate::{
     error::ApiError,
+    middlewares::auth::AuthorizedUser,
     model::user::ApiUser,
     repository::user::{CreateUserData, UpdateEmailData, UserRepository},
     utils::http::{DataBody, PathWithId},
@@ -29,25 +30,25 @@ async fn create(
     Ok(user.to_sendable())
 }
 
-#[put("/user/{id}")]
+#[put("/user/self")]
 async fn update_user(
     user_repo: Data<UserRepository>,
     data: Json<UpdateEmailData>,
-    path_params: Path<PathWithId<String>>,
+    token: AuthorizedUser,
 ) -> Result<ApiUser, ApiError> {
     let user = user_repo
-        .update_username(path_params.id.clone(), data.0)
+        .update_username(token.token.sub, data.0)
         .await?;
 
     Ok(user.to_sendable())
 }
 
-#[delete("/user/{id}")]
+#[delete("/user/self")]
 async fn delete_user(
     user_repo: Data<UserRepository>,
-    path_params: Path<PathWithId<String>>,
+    token: AuthorizedUser,
 ) -> Result<DataBody<Option<u8>>, ApiError> {
-    user_repo.delete(path_params.id.clone()).await?;
+    user_repo.delete(token.token.sub).await?;
 
     Ok(DataBody::new(None, "Deleted"))
 }

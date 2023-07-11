@@ -442,6 +442,7 @@ dependencies = [
  "bcrypt",
  "dotenvy",
  "env_logger",
+ "futures-util",
  "jsonwebtoken",
  "log",
  "nanoid",
