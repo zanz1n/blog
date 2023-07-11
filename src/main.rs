@@ -27,7 +27,7 @@ async fn main() -> Result<(), Error> {
     match process_env {
         ProcessEnv::None => {
             dotenvy::dotenv()
-                .expect("Environment variables provided and .env file is inaccessible");
+                .expect("No environment variables provided and .env file is inaccessible");
 
             // process_env = env_param::<ProcessEnv>("APP_ENV", None);
         }
