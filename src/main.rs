@@ -1,5 +1,6 @@
 mod env;
 mod error;
+mod middlewares;
 mod model;
 mod repository;
 mod routes;
@@ -37,7 +38,7 @@ async fn main() -> Result<(), Error> {
 
     // Retrieving app exec parameters from environment variables
     let port = env_param::<u16>("PORT", Some(8080));
-    let actix_workers = env_param::<usize>("ACTIX_WORKERS", Some(4));
+    let actix_workers = env_param::<i32>("ACTIX_WORKERS", Some(-1));
     let database_uri = env_param::<String>("DATABASE_URI", None);
     let min_db_conns = env_param::<u32>("MIN_DB_CONNECTIONS", Some(1));
     let max_db_conns = env_param::<u32>("MAX_DB_CONNECTIONS", None);
@@ -55,7 +56,7 @@ async fn main() -> Result<(), Error> {
     let jwt_dec_key = DecodingKey::from_ed_pem(&jwt_pub)
         .or_else(|e| Err(Error::new(ErrorKind::InvalidInput, e)))?;
 
-    let mut connection_opts = ConnectOptions::new(database_uri).to_owned();
+    let mut connection_opts = ConnectOptions::new(database_uri);
 
     connection_opts
         .max_connections(max_db_conns)
@@ -73,7 +74,7 @@ async fn main() -> Result<(), Error> {
     let db_box: &'static DatabaseConnection = Box::leak(Box::new(db));
 
     // Actix web config boilerplate
-    HttpServer::new(move || {
+    let mut server = HttpServer::new(move || {
         // Setting up app middlewares
         let actix_logger = middleware::Logger::new("%{r}a %r %s %Dms").log_target("http_log");
         let actix_path_normalizer = middleware::NormalizePath::trim();
@@ -102,11 +103,13 @@ async fn main() -> Result<(), Error> {
             .service(user::delete_user)
             .service(auth::signin)
             .service(auth::signup)
-    })
-    .workers(actix_workers)
-    .bind(format!("0.0.0.0:{}", port))?
-    .run()
-    .await?;
+    });
+
+    if 0 < actix_workers {
+        server = server.workers(actix_workers as usize);
+    }
+
+    server.bind(("0.0.0.0", port))?.run().await?;
 
     Ok(())
 }
