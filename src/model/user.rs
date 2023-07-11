@@ -18,6 +18,18 @@ pub struct Model {
     pub username: String,
     #[sea_orm(column_type = "String(Some(255))")]
     pub password: String,
+    pub role: UserRole,
+}
+
+#[derive(Clone, Debug, PartialEq, EnumIter, DeriveActiveEnum)]
+#[sea_orm(rs_type = "String", db_type = "Enum", enum_name = "userrole")]
+pub enum UserRole {
+    #[sea_orm(string_value = "COMMON")]
+    Common,
+    #[sea_orm(string_value = "ADMIN")]
+    Admin,
+    #[sea_orm(string_value = "PUBLISHER")]
+    Publisher,
 }
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]

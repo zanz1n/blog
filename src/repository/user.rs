@@ -1,7 +1,7 @@
 use crate::{
     error::ApiError,
     model::user::Entity as UserEntity,
-    model::user::{ActiveModel, Model as UserModel},
+    model::user::{ActiveModel, Model as UserModel, UserRole},
     utils::db::{db_to_user_error, hash_password, random_user_id, timestamp_now},
 };
 use sea_orm::{
@@ -87,6 +87,7 @@ impl UserRepository {
             username: Set(data.username),
             created_at: Set(now),
             updated_at: Set(now),
+            role: Set(UserRole::Common)
         };
 
         let user = match user.insert(self.db).await {
@@ -113,6 +114,7 @@ impl UserRepository {
             password: NotSet,
             updated_at: NotSet,
             username: Set(data.username),
+            role: NotSet
         };
 
         log::info!("{:?}", user);
@@ -137,6 +139,7 @@ impl UserRepository {
             password: NotSet,
             updated_at: NotSet,
             username: NotSet,
+            role: NotSet
         };
 
         let result = match user.delete(self.db).await {

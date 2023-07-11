@@ -1,4 +1,4 @@
-use sea_orm_migration::prelude::*;
+use sea_orm_migration::{prelude::*, sea_query::extension::postgres::Type};
 
 #[derive(DeriveMigrationName)]
 pub struct Migration;
@@ -7,6 +7,15 @@ pub struct Migration;
 impl MigrationTrait for Migration {
     // SeaOrm migration code
     async fn up(&self, manager: &SchemaManager) -> Result<(), DbErr> {
+        manager
+            .create_type(
+                Type::create()
+                    .as_enum(UserRole::Enum)
+                    .values([UserRole::Admin, UserRole::Common, UserRole::Publisher])
+                    .to_owned(),
+            )
+            .await?;
+
         manager
             .create_table(
                 Table::create()
@@ -23,6 +32,14 @@ impl MigrationTrait for Migration {
                     .col(ColumnDef::new(User::Email).string_len(64).not_null())
                     .col(ColumnDef::new(User::Username).string_len(42).not_null())
                     .col(ColumnDef::new(User::Password).string_len(255).not_null())
+                    .col(
+                        ColumnDef::new(User::Role)
+                            .enumeration(
+                                UserRole::Enum,
+                                [UserRole::Admin, UserRole::Common, UserRole::Publisher],
+                            )
+                            .not_null(),
+                    )
                     .to_owned(),
             )
             .await?;
@@ -42,9 +59,27 @@ impl MigrationTrait for Migration {
 
     async fn down(&self, manager: &SchemaManager) -> Result<(), DbErr> {
         manager
-            .drop_table(Table::drop().table(User::Table).to_owned())
-            .await
+            .drop_table(Table::drop().if_exists().table(User::Table).to_owned())
+            .await?;
+
+        manager
+            .drop_type(Type::drop().if_exists().name(UserRole::Enum).to_owned())
+            .await?;
+
+        Ok(())
     }
+}
+
+#[derive(Iden)]
+enum UserRole {
+    #[iden = "userrole"]
+    Enum,
+    #[iden = "ADMIN"]
+    Admin,
+    #[iden = "PUBLISHER"]
+    Publisher,
+    #[iden = "COMMON"]
+    Common,
 }
 
 #[derive(Iden)]
@@ -63,6 +98,8 @@ enum User {
     Username,
     #[iden = "password"]
     Password,
+    #[iden = "role"]
+    Role,
 }
 
 // assert_eq!(User::Table.to_string(), "users");
