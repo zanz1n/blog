@@ -30,6 +30,10 @@ pub enum ApiError {
     ExpiredAuthToken,
     #[error("This route requires authorization but no headers or cookies was provided")]
     AuthorizationRequired,
+    #[error("This route does not support sinature based authentication")]
+    SignatureAuthNotSupported,
+    #[error("The provided authorization header is not valid, ex: `Bearer <token>` or `Signature <token>`")]
+    InvalidAuthHeaderFormat,
 }
 
 impl ResponseError for ApiError {
