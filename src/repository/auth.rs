@@ -7,13 +7,13 @@ use sea_orm::{ColumnTrait, EntityTrait, QueryFilter, QuerySelect};
 use serde::{Deserialize, Serialize};
 use tokio::task::spawn_blocking;
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct UserJwtPayload {
-    sub: String,
-    username: String,
-    email: String,
-    exp: u64,
-    iat: u64,
+    pub sub: String,
+    pub username: String,
+    pub email: String,
+    pub exp: u64,
+    pub iat: u64,
 }
 
 impl UserJwtPayload {
