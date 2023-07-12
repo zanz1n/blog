@@ -106,6 +106,7 @@ async fn main() -> Result<(), Error> {
             .wrap(actix_logger)
             .wrap(actix_path_normalizer)
             .wrap(actix_cors)
+            .service(user::get_self)
             .service(user::get_by_id)
             .service(user::create)
             .service(user::update_user)

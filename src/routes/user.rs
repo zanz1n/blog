@@ -20,6 +20,16 @@ async fn get_by_id(
     Ok(user.to_sendable())
 }
 
+#[get("/user/self")]
+async fn get_self(
+    user_repo: Data<UserRepository>,
+    token: AuthorizedUser,
+) -> Result<ApiUser, ApiError> {
+    let user = user_repo.get_by_id(token.token.sub).await?;
+
+    Ok(user.to_sendable())
+}
+
 #[post("/user")]
 async fn create(
     user_repo: Data<UserRepository>,
