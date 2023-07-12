@@ -57,7 +57,7 @@ async fn main() -> Result<(), Error> {
     let jwt_dec_key = DecodingKey::from_ed_pem(&jwt_pub)
         .or_else(|e| Err(Error::new(ErrorKind::InvalidInput, e)))?;
 
-    let cache_service = CacheService::new(redis_uri)?;
+    let cache_service = CacheService::new(redis_uri).await?;
 
     let mut connection_opts = ConnectOptions::new(database_uri);
 
