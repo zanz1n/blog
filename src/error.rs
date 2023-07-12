@@ -41,12 +41,15 @@ pub enum ApiError {
     UserUnderTokenInvalidation(InvalidationReason),
     #[error("You can only mutate information if you own them or if you are a mod/admin")]
     DataMutationDenied,
+    #[error("Post could not be found")]
+    PostNotFound,
 }
 
 impl ResponseError for ApiError {
     fn status_code(&self) -> StatusCode {
         match self {
             Self::UserNotFound => StatusCode::NOT_FOUND,
+            Self::PostNotFound => StatusCode::NOT_FOUND,
             Self::InternalServerError => StatusCode::INTERNAL_SERVER_ERROR,
             Self::UserAlreadyExists => StatusCode::CONFLICT,
             Self::UserUnauthorized => StatusCode::UNAUTHORIZED,
