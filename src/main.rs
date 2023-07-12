@@ -112,6 +112,7 @@ async fn main() -> Result<(), Error> {
             .service(user::delete_user)
             .service(auth::signin)
             .service(auth::signup)
+            .service(auth::get_self)
     });
 
     if 0 < actix_workers {

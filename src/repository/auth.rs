@@ -1,6 +1,10 @@
 use crate::error::ApiError;
 use crate::model::user::{Column as UserColumn, Entity as UserEntity, UserRole};
 use crate::utils::generic::now_unix_sec;
+use crate::utils::http::{serialize_response, DataBody};
+use actix_web::body::BoxBody;
+use actix_web::http::StatusCode;
+use actix_web::Responder;
 use jsonwebtoken::{Algorithm, DecodingKey, EncodingKey, Header, TokenData, Validation};
 use sea_orm::DatabaseConnection;
 use sea_orm::{ColumnTrait, EntityTrait, QueryFilter, QuerySelect};
@@ -17,6 +21,15 @@ pub struct UserJwtPayload {
     pub exp: u64,
     pub iat: u64,
     pub role: UserRole,
+}
+
+impl Responder for UserJwtPayload {
+    type Body = BoxBody;
+
+    #[inline]
+    fn respond_to(self, req: &actix_web::HttpRequest) -> actix_web::HttpResponse<Self::Body> {
+        DataBody::new(self, "Success").respond_to(req)
+    }
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -104,7 +117,7 @@ impl AuthProvider {
         id: String,
         email: String,
         username: String,
-        role: UserRole
+        role: UserRole,
     ) -> Result<String, ApiError> {
         let claims = UserJwtPayload::new(id, username, email, Some(role));
 
@@ -229,7 +242,8 @@ impl AuthProvider {
         };
 
         if can_auth {
-            self.generate_token(user.id, email, user.username, user.role).await
+            self.generate_token(user.id, email, user.username, user.role)
+                .await
         } else {
             Err(ApiError::UserUnauthorized)
         }

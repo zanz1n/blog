@@ -1,13 +1,16 @@
 use crate::{
+    error::ApiError,
+    middlewares::auth::AuthorizedUser,
     model::user::ApiUser,
     repository::{
-        auth::AuthProvider,
+        auth::{AuthProvider, UserJwtPayload},
         user::{CreateUserData, UserRepository},
     },
-    utils::http::serialize_response, error::ApiError,
+    utils::http::serialize_response,
 };
 use actix_web::{
     body::BoxBody,
+    get,
     http::StatusCode,
     post,
     web::{Data, Json},
@@ -49,6 +52,11 @@ impl Responder for SignUpResponseBody {
     }
 }
 
+#[get("/auth/self")]
+pub async fn get_self(token: AuthorizedUser) -> Result<UserJwtPayload, ApiError> {
+    Ok(token.token)
+}
+
 #[post("/auth/signin")]
 pub async fn signin(
     auth_provider: Data<AuthProvider>,
@@ -71,7 +79,12 @@ pub async fn signup(
     let user = user_repo.create(body.0).await?;
 
     let token = auth_provider
-        .generate_token(user.id.clone(), user.email.clone(), user.username.clone(), user.role.clone())
+        .generate_token(
+            user.id.clone(),
+            user.email.clone(),
+            user.username.clone(),
+            user.role.clone(),
+        )
         .await;
 
     let token = match token {
