@@ -47,6 +47,15 @@ impl MigrationTrait for Migration {
             )
             .await?;
 
+        manager
+            .create_index(
+                Index::create()
+                    .table(Post::Table)
+                    .col(Post::CreatedAt)
+                    .to_owned(),
+            )
+            .await?;
+
         Ok(())
     }
 
