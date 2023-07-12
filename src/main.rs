@@ -10,7 +10,7 @@ use actix_cors::Cors;
 use actix_web::{middleware, web::Data, App, HttpServer};
 use env::{env_param, ProcessEnv};
 use jsonwebtoken::{DecodingKey, EncodingKey};
-use repository::{auth::AuthProvider, user::UserRepository};
+use repository::{auth::AuthProvider, cache::CacheService, user::UserRepository};
 use routes::{auth, user};
 use sea_orm::{ConnectOptions, Database, DatabaseConnection};
 use std::{
@@ -46,6 +46,7 @@ async fn main() -> Result<(), Error> {
     let db_conn_idle_timeout = env_param::<u64>("DB_CONN_IDLE_TIMEOUT", Some(10));
     let jwt_key = env_param::<String>("JWT_KEY_FILE", None);
     let jwt_pub = env_param::<String>("JWT_PUB_FILE", None);
+    let redis_uri = env_param::<String>("REDIS_URI", None);
 
     let jwt_key = fs::read(jwt_key)?;
     let jwt_pub = fs::read(jwt_pub)?;
@@ -55,6 +56,8 @@ async fn main() -> Result<(), Error> {
 
     let jwt_dec_key = DecodingKey::from_ed_pem(&jwt_pub)
         .or_else(|e| Err(Error::new(ErrorKind::InvalidInput, e)))?;
+
+    let cache_service = CacheService::new(redis_uri)?;
 
     let mut connection_opts = ConnectOptions::new(database_uri);
 
@@ -70,8 +73,10 @@ async fn main() -> Result<(), Error> {
         .or_else(|e| Err(Error::new(ErrorKind::ConnectionRefused, e)))?;
 
     // Using the box structure to allow multi-thread access to the
-    // DatabaseConnection instance.
+    // DatabaseConnection and Pool<M, W> instance.
     let db_box: &'static DatabaseConnection = Box::leak(Box::new(db));
+
+    let cache_box: &'static CacheService = Box::leak(Box::new(cache_service));
 
     // Actix web config boilerplate
     let mut server = HttpServer::new(move || {
@@ -90,10 +95,13 @@ async fn main() -> Result<(), Error> {
         let auth_service = AuthProvider::new(db_box, jwt_enc_key.clone(), jwt_dec_key.clone());
         let auth_service = Data::new(auth_service);
 
+        let cache_service = Data::new(cache_box);
+
         App::new()
             .app_data(app_json_error_handler())
             .app_data(user_repo)
             .app_data(auth_service)
+            .app_data(cache_service)
             .wrap(actix_logger)
             .wrap(actix_path_normalizer)
             .wrap(actix_cors)
