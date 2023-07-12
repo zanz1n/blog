@@ -1,3 +1,5 @@
+use std::fmt::Display;
+
 use crate::error::ApiError;
 use crate::model::user::{Column as UserColumn, Entity as UserEntity};
 use crate::utils::generic::now_unix_sec;
@@ -6,6 +8,8 @@ use sea_orm::DatabaseConnection;
 use sea_orm::{ColumnTrait, EntityTrait, QueryFilter, QuerySelect};
 use serde::{Deserialize, Serialize};
 use tokio::task::spawn_blocking;
+
+use super::cache::CacheService;
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct UserJwtPayload {
@@ -16,6 +20,38 @@ pub struct UserJwtPayload {
     pub iat: u64,
 }
 
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub enum InvalidationReason {
+    PasswordChanged,
+    UserRequest,
+    TooManyAuthFailures,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct InvalidationData {
+    date: u64,
+    reason: InvalidationReason,
+}
+
+impl InvalidationData {
+    fn new(date: u64, reason: InvalidationReason) -> Self {
+        Self { date, reason }
+    }
+
+    pub fn date(&self) -> u64 {
+        self.date
+    }
+
+    pub fn reason(&self) -> InvalidationReason {
+        self.reason.clone()
+    }
+}
+
+pub enum InvalidatedResult {
+    Is(InvalidationData),
+    Not,
+}
+
 impl UserJwtPayload {
     fn new(id: String, username: String, email: String) -> Self {
         let now = now_unix_sec();
@@ -24,14 +60,17 @@ impl UserJwtPayload {
             sub: id,
             username,
             email,
-            exp: (now + (60 * 60)),
+            exp: (now + (JWT_TOKEN_DURATION as u64)),
             iat: now,
         }
     }
 }
 
+const JWT_TOKEN_DURATION: usize = 3600;
+
 pub struct AuthProvider {
     db: &'static DatabaseConnection,
+    cs: &'static CacheService,
     enc_key: EncodingKey,
     dec_key: DecodingKey,
     validation: Validation,
@@ -42,6 +81,7 @@ pub const JWT_ALGORITHM: Algorithm = Algorithm::EdDSA;
 impl AuthProvider {
     pub fn new(
         db: &'static DatabaseConnection,
+        cs: &'static CacheService,
         enc_key: EncodingKey,
         dec_key: DecodingKey,
     ) -> Self {
@@ -52,6 +92,7 @@ impl AuthProvider {
             dec_key,
             db,
             validation,
+            cs,
         }
     }
 
@@ -77,9 +118,43 @@ impl AuthProvider {
             })
     }
 
+    pub async fn add_invalidation(
+        &self,
+        id: String,
+        reason: InvalidationReason,
+    ) -> Result<(), ApiError> {
+        let id = "invalidation/".to_string() + id.as_str();
+
+        let payload = InvalidationData::new(now_unix_sec(), reason);
+        let payload = serde_json::to_string(&payload).or_else(|e| {
+            log::error!("Failed to encode invalidation data: {}", e);
+            Err(ApiError::InternalServerError)
+        })?;
+
+        self.cs
+            .set_ttl(id, payload, JWT_TOKEN_DURATION + 30)
+            .await?;
+
+        Ok(())
+    }
+
     // Implement later
-    pub async fn is_under_invalidation(&self, _id: String) -> Result<bool, ApiError> {
-        Ok(false)
+    pub async fn is_under_invalidation(&self, id: String) -> Result<InvalidatedResult, ApiError> {
+        let id = "invalidation/".to_string() + id.as_str();
+
+        let res = self.cs.get(id).await?;
+
+        if let Some(invalidated) = res {
+            let payload: InvalidationData =
+                serde_json::from_str(invalidated.as_str()).or_else(|e| {
+                    log::error!("Failed to parse cached invalidation data: {}", e);
+                    Err(ApiError::InternalServerError)
+                })?;
+
+            Ok(InvalidatedResult::Is(payload))
+        } else {
+            Ok(InvalidatedResult::Not)
+        }
     }
 
     pub async fn decode_token(&self, token: String) -> Result<UserJwtPayload, ApiError> {
@@ -105,10 +180,15 @@ impl AuthProvider {
             Err(ApiError::InternalServerError)
         })??;
 
-        if self.is_under_invalidation(token.sub.clone()).await? {
-            Err(ApiError::InvalidAuthToken)
-        } else {
-            Ok(token)
+        match self.is_under_invalidation(token.sub.clone()).await? {
+            InvalidatedResult::Is(data) => {
+                if data.date + 10 < token.iat {
+                    Ok(token)
+                } else {
+                    Err(ApiError::UserUnderTokenInvalidation(data.reason))
+                }
+            }
+            InvalidatedResult::Not => Ok(token),
         }
     }
 

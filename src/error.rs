@@ -1,6 +1,6 @@
 use actix_web::{body::BoxBody, http::StatusCode, ResponseError};
 
-use crate::utils::http::{serialize_response, ErrorResponseBody};
+use crate::{utils::http::{serialize_response, ErrorResponseBody}, repository::auth::InvalidationReason};
 
 #[derive(Debug, thiserror::Error)]
 pub enum ApiError {
@@ -34,6 +34,8 @@ pub enum ApiError {
     SignatureAuthNotSupported,
     #[error("The provided authorization header is not valid, ex: `Bearer <token>` or `Signature <token>`")]
     InvalidAuthHeaderFormat,
+    #[error("Your authentication token is not longer valid, please login again")]
+    UserUnderTokenInvalidation(InvalidationReason),
 }
 
 impl ResponseError for ApiError {
@@ -44,6 +46,7 @@ impl ResponseError for ApiError {
             Self::UserAlreadyExists => StatusCode::CONFLICT,
             Self::UserUnauthorized => StatusCode::UNAUTHORIZED,
             Self::AuthorizationRequired => StatusCode::UNAUTHORIZED,
+            Self::UserUnderTokenInvalidation(_) => StatusCode::UNAUTHORIZED,
             _ => StatusCode::BAD_REQUEST,
         }
     }

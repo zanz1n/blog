@@ -92,7 +92,8 @@ async fn main() -> Result<(), Error> {
         let user_repo = UserRepository::new(db_box);
         let user_repo = Data::new(user_repo);
 
-        let auth_service = AuthProvider::new(db_box, jwt_enc_key.clone(), jwt_dec_key.clone());
+        let auth_service =
+            AuthProvider::new(db_box, cache_box, jwt_enc_key.clone(), jwt_dec_key.clone());
         let auth_service = Data::new(auth_service);
 
         let cache_service = Data::new(cache_box);
