@@ -53,12 +53,12 @@ impl Responder for SignUpResponseBody {
 }
 
 #[get("/auth/self")]
-pub async fn get_self(token: AuthorizedUser) -> Result<UserJwtPayload, ApiError> {
+async fn get_self(token: AuthorizedUser) -> Result<UserJwtPayload, ApiError> {
     Ok(token.token)
 }
 
 #[post("/auth/signin")]
-pub async fn signin(
+async fn signin(
     auth_provider: Data<AuthProvider>,
     body: Json<SignInRequestBody>,
 ) -> Result<SignInResponseBody, ApiError> {
@@ -71,7 +71,7 @@ pub async fn signin(
 }
 
 #[post("/auth/signup")]
-pub async fn signup(
+async fn signup(
     auth_provider: Data<AuthProvider>,
     user_repo: Data<UserRepository>,
     body: Json<CreateUserData>,
