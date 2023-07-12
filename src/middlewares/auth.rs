@@ -61,7 +61,7 @@ impl FromRequest for AuthorizedUser {
 
                 match auth_cookie {
                     Some(v) => v.to_string(),
-                    None => return err_(ApiError::InternalServerError),
+                    None => return err_(ApiError::AuthorizationRequired),
                 }
             }
         };
