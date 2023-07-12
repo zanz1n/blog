@@ -1,5 +1,6 @@
+use super::user::ApiUser;
 use crate::utils::http::DataBody;
-use actix_web::body::BoxBody;
+use actix_web::{body::BoxBody, HttpRequest, HttpResponse, Responder};
 use sea_orm::prelude::*;
 use serde::{Deserialize, Serialize};
 
@@ -22,6 +23,40 @@ pub struct Model {
     pub user_id: String,
 }
 
+impl Model {
+    pub fn with_user(self, user: ApiUser) -> PostWithUser {
+        PostWithUser::new(self, user)
+    }
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct PostWithUser {
+    pub id: String,
+    #[serde(rename = "createdAt")]
+    pub created_at: DateTime,
+    #[serde(rename = "updatedAt")]
+    pub updated_at: DateTime,
+    pub slug: String,
+    pub content: String,
+    #[serde(rename = "thumbImage")]
+    pub thumb_image: String,
+    pub user: ApiUser,
+}
+
+impl PostWithUser {
+    pub fn new(model: Model, user: ApiUser) -> Self {
+        Self {
+            id: model.id,
+            created_at: model.created_at,
+            updated_at: model.updated_at,
+            slug: model.slug,
+            content: model.content,
+            thumb_image: model.thumb_image,
+            user,
+        }
+    }
+}
+
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]
 pub enum Relation {
     #[sea_orm(
@@ -40,10 +75,10 @@ impl Related<super::user::Entity> for Entity {
 
 impl ActiveModelBehavior for ActiveModel {}
 
-impl actix_web::Responder for Model {
+impl Responder for Model {
     type Body = BoxBody;
 
-    fn respond_to(self, req: &actix_web::HttpRequest) -> actix_web::HttpResponse<Self::Body> {
+    fn respond_to(self, req: &HttpRequest) -> HttpResponse<Self::Body> {
         DataBody::new(self, "Success").respond_to(req)
     }
 }
