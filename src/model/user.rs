@@ -21,15 +21,29 @@ pub struct Model {
     pub role: UserRole,
 }
 
-#[derive(Clone, Debug, PartialEq, EnumIter, DeriveActiveEnum)]
+#[derive(Clone, Debug, PartialEq, EnumIter, DeriveActiveEnum, Serialize, Deserialize)]
 #[sea_orm(rs_type = "String", db_type = "Enum", enum_name = "userrole")]
 pub enum UserRole {
     #[sea_orm(string_value = "COMMON")]
+    #[serde(rename = "COMMON")]
     Common,
     #[sea_orm(string_value = "ADMIN")]
+    #[serde(rename = "ADMIN")]
     Admin,
     #[sea_orm(string_value = "PUBLISHER")]
+    #[serde(rename = "PUBLISHER")]
     Publisher,
+}
+
+impl ToString for UserRole {
+    fn to_string(&self) -> String {
+        match self {
+            UserRole::Admin => "ADMIN",
+            UserRole::Common => "COMMON",
+            UserRole::Publisher => "PUBLISHER",
+        }
+        .to_owned()
+    }
 }
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]
@@ -55,6 +69,7 @@ pub struct ApiUser {
     pub updated_at: DateTime,
     pub email: String,
     pub username: String,
+    pub role: UserRole,
 }
 
 impl Model {
@@ -65,6 +80,7 @@ impl Model {
             updated_at: self.updated_at,
             email: self.email,
             username: self.username,
+            role: self.role,
         }
     }
 }

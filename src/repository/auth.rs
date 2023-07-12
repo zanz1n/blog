@@ -1,7 +1,5 @@
-use std::fmt::Display;
-
 use crate::error::ApiError;
-use crate::model::user::{Column as UserColumn, Entity as UserEntity};
+use crate::model::user::{Column as UserColumn, Entity as UserEntity, UserRole};
 use crate::utils::generic::now_unix_sec;
 use jsonwebtoken::{Algorithm, DecodingKey, EncodingKey, Header, TokenData, Validation};
 use sea_orm::DatabaseConnection;
@@ -18,6 +16,7 @@ pub struct UserJwtPayload {
     pub email: String,
     pub exp: u64,
     pub iat: u64,
+    pub role: UserRole,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -53,7 +52,7 @@ pub enum InvalidatedResult {
 }
 
 impl UserJwtPayload {
-    fn new(id: String, username: String, email: String) -> Self {
+    fn new(id: String, username: String, email: String, role: Option<UserRole>) -> Self {
         let now = now_unix_sec();
 
         Self {
@@ -62,6 +61,10 @@ impl UserJwtPayload {
             email,
             exp: (now + (JWT_TOKEN_DURATION as u64)),
             iat: now,
+            role: match role {
+                Some(r) => r,
+                None => UserRole::Common,
+            },
         }
     }
 }
@@ -101,8 +104,9 @@ impl AuthProvider {
         id: String,
         email: String,
         username: String,
+        role: UserRole
     ) -> Result<String, ApiError> {
-        let claims = UserJwtPayload::new(id, username, email);
+        let claims = UserJwtPayload::new(id, username, email, Some(role));
 
         let key = self.enc_key.clone();
 
@@ -225,7 +229,7 @@ impl AuthProvider {
         };
 
         if can_auth {
-            self.generate_token(user.id, email, user.username).await
+            self.generate_token(user.id, email, user.username, user.role).await
         } else {
             Err(ApiError::UserUnauthorized)
         }

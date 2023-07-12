@@ -71,7 +71,7 @@ pub async fn signup(
     let user = user_repo.create(body.0).await?;
 
     let token = auth_provider
-        .generate_token(user.id.clone(), user.email.clone(), user.username.clone())
+        .generate_token(user.id.clone(), user.email.clone(), user.username.clone(), user.role.clone())
         .await;
 
     let token = match token {
