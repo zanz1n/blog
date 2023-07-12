@@ -1,7 +1,7 @@
 use crate::{
     error::ApiError,
     middlewares::auth::AuthorizedUser,
-    model::user::ApiUser,
+    model::user::{ApiUser, UserRole},
     repository::user::{CreateUserData, UpdateEmailData, UserRepository},
     utils::http::{DataBody, PathWithId},
 };
@@ -30,25 +30,33 @@ async fn create(
     Ok(user.to_sendable())
 }
 
-#[put("/user/self")]
+#[put("/user/{id}")]
 async fn update_user(
     user_repo: Data<UserRepository>,
     data: Json<UpdateEmailData>,
     token: AuthorizedUser,
+    params: Path<PathWithId<String>>,
 ) -> Result<ApiUser, ApiError> {
-    let user = user_repo
-        .update_username(token.token.sub, data.0)
-        .await?;
+    if token.token.sub != params.id && token.token.role != UserRole::Admin {
+        Err(ApiError::DataMutationDenied)
+    } else {
+        let user = user_repo.update_username(params.id(), data.0).await?;
 
-    Ok(user.to_sendable())
+        Ok(user.to_sendable())
+    }
 }
 
-#[delete("/user/self")]
+#[delete("/user/{id}")]
 async fn delete_user(
     user_repo: Data<UserRepository>,
     token: AuthorizedUser,
+    params: Path<PathWithId<String>>,
 ) -> Result<DataBody<Option<u8>>, ApiError> {
-    user_repo.delete(token.token.sub).await?;
+    if token.token.sub != params.id && token.token.role != UserRole::Admin {
+        Err(ApiError::DataMutationDenied)
+    } else {
+        user_repo.delete(params.id()).await?;
 
-    Ok(DataBody::new(None, "Deleted"))
+        Ok(DataBody::new(None, "Deleted"))
+    }
 }

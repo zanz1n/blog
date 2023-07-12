@@ -1,6 +1,9 @@
 use actix_web::{body::BoxBody, http::StatusCode, ResponseError};
 
-use crate::{utils::http::{serialize_response, ErrorResponseBody}, repository::auth::InvalidationReason};
+use crate::{
+    repository::auth::InvalidationReason,
+    utils::http::{serialize_response, ErrorResponseBody},
+};
 
 #[derive(Debug, thiserror::Error)]
 pub enum ApiError {
@@ -36,6 +39,8 @@ pub enum ApiError {
     InvalidAuthHeaderFormat,
     #[error("Your authentication token is not longer valid, please login again")]
     UserUnderTokenInvalidation(InvalidationReason),
+    #[error("You can only mutate information if you own them or if you are a mod/admin")]
+    DataMutationDenied,
 }
 
 impl ResponseError for ApiError {
@@ -47,6 +52,7 @@ impl ResponseError for ApiError {
             Self::UserUnauthorized => StatusCode::UNAUTHORIZED,
             Self::AuthorizationRequired => StatusCode::UNAUTHORIZED,
             Self::UserUnderTokenInvalidation(_) => StatusCode::UNAUTHORIZED,
+            Self::DataMutationDenied => StatusCode::UNAUTHORIZED,
             _ => StatusCode::BAD_REQUEST,
         }
     }
