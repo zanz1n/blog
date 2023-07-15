@@ -2,7 +2,10 @@ use crate::{
     error::ApiError,
     middlewares::auth::AuthorizedUser,
     model::user::{ApiUser, UserRole},
-    repository::user::{CreateUserData, UpdateEmailData, UserRepository},
+    repository::{
+        auth::{AuthProvider, InvalidationReason},
+        user::{CreateUserData, UpdateEmailData, UserRepository},
+    },
     utils::http::{DataBody, PathWithId},
 };
 use actix_web::{
@@ -59,6 +62,7 @@ async fn update_user(
 #[delete("/user/{id}")]
 async fn delete_user(
     user_repo: Data<UserRepository>,
+    auth_service: Data<AuthProvider>,
     token: AuthorizedUser,
     params: Path<PathWithId<String>>,
 ) -> Result<DataBody<Option<u8>>, ApiError> {
@@ -66,6 +70,11 @@ async fn delete_user(
         Err(ApiError::DataMutationDenied)
     } else {
         user_repo.delete(params.id()).await?;
+
+        auth_service
+            .add_invalidation(params.id(), InvalidationReason::UserDeleted)
+            .await
+            .unwrap_or_else(|e| log::error!("Failed to add user invalidation: {}", e));
 
         Ok(DataBody::new(None, "Deleted"))
     }
