@@ -43,6 +43,12 @@ pub enum ApiError {
     DataMutationDenied,
     #[error("Post could not be found")]
     PostNotFound,
+    #[error("Users id's have a fixed size of 24 characters")]
+    InvalidPostrIdSize,
+    #[error("Posts 'thumbImage' prop must be a nullable string up to 128 characters")]
+    InvalidPostThumbIdSize,
+    #[error("Posts 'slug' prop must at least 12 and up to 128 characters")]
+    InvalidPostSlugSize,
 }
 
 impl ResponseError for ApiError {
