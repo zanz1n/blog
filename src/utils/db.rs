@@ -3,8 +3,8 @@ use sea_orm::{prelude::DateTime, DbErr};
 use std::time::{SystemTime, UNIX_EPOCH};
 use tokio::task::spawn_blocking;
 
-const USER_ID_SIZE: usize = 18;
-const POST_ID_SIZE: usize = 24;
+pub const USER_ID_SIZE: usize = 18;
+pub const POST_ID_SIZE: usize = 24;
 
 #[inline]
 pub fn random_id(size: usize) -> String {
