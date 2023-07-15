@@ -16,9 +16,20 @@ pub struct DataBody<T: Serialize> {
     message: String,
 }
 
-#[derive(Clone, Copy, Serialize, Deserialize)]
+#[derive(Clone, Debug, Copy, Serialize, Deserialize)]
 pub struct PathWithId<T: Clone> {
     pub id: T,
+}
+
+#[derive(Clone, Debug, Copy, Serialize, Deserialize)]
+pub struct LimitQueryParams<T: Clone> {
+    pub limit: T,
+}
+
+impl<T: Clone> LimitQueryParams<T> {
+    pub fn limit(&self) -> T {
+        self.limit.clone()
+    }
 }
 
 impl<T: Clone> PathWithId<T> {
@@ -40,8 +51,8 @@ where
             status = status_code;
             body_str = enc;
         }
-        Err(_) => {
-            log::warn!("Failed to encode response body");
+        Err(e) => {
+            log::warn!("Failed to encode response body: {}", e);
             status = StatusCode::INTERNAL_SERVER_ERROR;
             body_str = ENCODING_FAILED_BODY.to_string();
         }
