@@ -1,17 +1,15 @@
+use super::cache::CacheService;
 use crate::error::ApiError;
 use crate::model::user::{Column as UserColumn, Entity as UserEntity, UserRole};
 use crate::utils::generic::now_unix_sec;
-use crate::utils::http::{serialize_response, DataBody};
+use crate::utils::http::DataBody;
 use actix_web::body::BoxBody;
-use actix_web::http::StatusCode;
 use actix_web::Responder;
 use jsonwebtoken::{Algorithm, DecodingKey, EncodingKey, Header, TokenData, Validation};
 use sea_orm::DatabaseConnection;
 use sea_orm::{ColumnTrait, EntityTrait, QueryFilter, QuerySelect};
 use serde::{Deserialize, Serialize};
 use tokio::task::spawn_blocking;
-
-use super::cache::CacheService;
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct UserJwtPayload {
@@ -37,6 +35,8 @@ pub enum InvalidationReason {
     PasswordChanged,
     UserRequest,
     TooManyAuthFailures,
+    UserDeleted,
+    PermissionChanged,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
