@@ -5,7 +5,7 @@ use sea_orm::prelude::*;
 use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Debug, PartialEq, DeriveEntityModel, Serialize, Deserialize)]
-#[sea_orm(table_name = "users", schema_name = "public")]
+#[sea_orm(table_name = "posts", schema_name = "public")]
 pub struct Model {
     #[sea_orm(primary_key, column_type = "String(Some(24))")]
     pub id: String,
@@ -18,7 +18,7 @@ pub struct Model {
     #[sea_orm(column_type = "Text")]
     pub content: String,
     #[sea_orm(column_name = "thumbImageKey", column_type = "String(Some(128))")]
-    pub thumb_image: String,
+    pub thumb_image: Option<String>,
     #[sea_orm(column_name = "userId", column_type = "String(Some(18))", indexed)]
     pub user_id: String,
 }
@@ -39,7 +39,7 @@ pub struct PostWithUser {
     pub slug: String,
     pub content: String,
     #[serde(rename = "thumbImage")]
-    pub thumb_image: String,
+    pub thumb_image: Option<String>,
     pub user: ApiUser,
 }
 
