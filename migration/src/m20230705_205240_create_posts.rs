@@ -32,7 +32,6 @@ impl MigrationTrait for Migration {
             .create_index(
                 Index::create()
                     .table(Post::Table)
-                    .unique()
                     .col(Post::UserId)
                     .to_owned(),
             )
