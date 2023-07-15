@@ -10,8 +10,10 @@ use actix_cors::Cors;
 use actix_web::{middleware, web::Data, App, HttpServer};
 use env::{env_param, ProcessEnv};
 use jsonwebtoken::{DecodingKey, EncodingKey};
-use repository::{auth::AuthProvider, cache::CacheService, user::UserRepository};
-use routes::{auth, user};
+use repository::{
+    auth::AuthProvider, cache::CacheService, post::PostRepository, user::UserRepository,
+};
+use routes::{auth, post, user};
 use sea_orm::{ConnectOptions, Database, DatabaseConnection};
 use std::{
     fs,
@@ -98,9 +100,13 @@ async fn main() -> Result<(), Error> {
 
         let cache_service = Data::new(cache_box);
 
+        let post_repo = PostRepository::new(db_box, cache_box);
+        let post_repo = Data::new(post_repo);
+
         App::new()
             .app_data(app_json_error_handler())
             .app_data(user_repo)
+            .app_data(post_repo)
             .app_data(auth_service)
             .app_data(cache_service)
             .wrap(actix_logger)
@@ -114,6 +120,10 @@ async fn main() -> Result<(), Error> {
             .service(auth::signin)
             .service(auth::signup)
             .service(auth::get_self)
+            .service(post::get_post_by_id)
+            .service(post::get_posts_recomendation)
+            .service(post::get_user_posts)
+            .service(post::create_post)
     });
 
     if 0 < actix_workers {
