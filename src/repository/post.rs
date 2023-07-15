@@ -6,6 +6,7 @@ use crate::{
         post::{Column as PostColumn, Entity as PostEntity, Model as PostModel},
         user::Entity as UserEntity,
     },
+    utils::db::USER_ID_SIZE,
 };
 
 use super::cache::CacheService;
@@ -35,18 +36,46 @@ impl PostRepository {
         }
     }
 
-    pub async fn get_recomendation(&self) -> Result<Vec<PostModel>, ApiError> {
-        let result = self.cm.get("".to_string()).await?;
+    pub async fn get_user_posts(&self, id: String, limit: u64) -> Result<Vec<PostModel>, ApiError> {
+        if id.len() != USER_ID_SIZE {
+            return Err(ApiError::InvalidUserIdSize);
+        }
+
+        let mut limit = limit;
+
+        if limit > 256 {
+            limit = 256
+        }
+
+        let result = PostEntity::find()
+            .order_by_desc(PostColumn::CreatedAt)
+            .limit(limit)
+            .all(self.db)
+            .await
+            .or_else(|err| match err {
+                DbErr::RecordNotFound(_) => Ok(vec![]),
+                _ => Err(ApiError::InternalServerError),
+            })?;
+
+        Ok(result)
+    }
+
+    pub async fn get_recomendation(&self, limit: usize) -> Result<Vec<PostModel>, ApiError> {
+        let result = self.cm.get("post-recomendation".to_string()).await?;
 
         if let Some(cache) = result {
-            let cache: Vec<PostModel> = serde_json::from_str(cache.as_str()).or_else(|e| {
+            let mut cache: Vec<PostModel> = serde_json::from_str(cache.as_str()).or_else(|e| {
                 log::error!("Failed to decode cached recomendation: {}", e);
                 Err(ApiError::InternalServerError)
             })?;
 
-            return Ok(cache);
+            if limit <= cache.len() {
+                cache = cache[0..limit].to_vec()
+            }
+
+            Ok(cache)
         } else {
-            let result = PostEntity::find()
+            let mut result = PostEntity::find()
                 .order_by_desc(PostColumn::CreatedAt)
                 .limit(256)
                 .all(self.db)
@@ -70,6 +99,10 @@ impl PostRepository {
                 Err(e) => {
                     log::error!("Failed to encode cached recomendation: {}", e);
                 }
+            }
+
+            if limit <= result.len() {
+                result = result[0..limit].to_vec()
             }
 
             Ok(result)
