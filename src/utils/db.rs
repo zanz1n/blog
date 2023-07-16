@@ -7,11 +7,6 @@ pub const USER_ID_SIZE: usize = 18;
 pub const POST_ID_SIZE: usize = 24;
 
 #[inline]
-pub fn random_id(size: usize) -> String {
-    nanoid::nanoid!(size)
-}
-
-#[inline]
 pub fn random_user_id() -> String {
     nanoid::nanoid!(USER_ID_SIZE)
 }

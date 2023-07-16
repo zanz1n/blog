@@ -41,21 +41,13 @@ pub enum InvalidationReason {
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct InvalidationData {
-    date: u64,
-    reason: InvalidationReason,
+    pub date: u64,
+    pub reason: InvalidationReason,
 }
 
 impl InvalidationData {
     fn new(date: u64, reason: InvalidationReason) -> Self {
         Self { date, reason }
-    }
-
-    pub fn date(&self) -> u64 {
-        self.date
-    }
-
-    pub fn reason(&self) -> InvalidationReason {
-        self.reason.clone()
     }
 }
 
