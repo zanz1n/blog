@@ -43,8 +43,25 @@ async fn create(
     Ok(user.to_sendable())
 }
 
-#[put("/user/{id}")]
-async fn update_user(
+#[put("/user/{id}/invalidate")]
+async fn invalidate_user(
+    auth_repository: Data<AuthProvider>,
+    token: AuthorizedUser,
+    params: Path<PathWithId<String>>,
+) -> Result<DataBody<Option<()>>, ApiError> {
+    if token.token.sub != params.id && token.token.role != UserRole::Admin {
+        Err(ApiError::DataMutationDenied)
+    } else {
+        auth_repository
+            .add_invalidation(params.id(), InvalidationReason::UserRequest)
+            .await?;
+
+        Ok(DataBody::new(None, "User invalidation started"))
+    }
+}
+
+#[put("/user/{id}/username")]
+async fn update_username(
     user_repo: Data<UserRepository>,
     data: Json<UpdateEmailData>,
     token: AuthorizedUser,
