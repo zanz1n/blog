@@ -1,6 +1,6 @@
 use crate::{
     error::ApiError,
-    repository::auth::{AuthProvider, UserJwtPayload},
+    repository::auth::{AuthRepository, AuthService, UserJwtPayload},
 };
 use actix_web::{dev::Payload, web, Error as ActixError, FromRequest, HttpRequest};
 use futures_util::{Future, FutureExt};
@@ -66,7 +66,7 @@ impl FromRequest for AuthorizedUser {
             }
         };
 
-        let auth_service = match req.app_data::<web::Data<AuthProvider>>() {
+        let auth_service = match req.app_data::<web::Data<AuthService>>() {
             Some(v) => v,
             None => {
                 log::error!("Poorly configured actix AuthProvider dependency injection");

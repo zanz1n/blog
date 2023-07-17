@@ -4,6 +4,7 @@ use crate::{
     model::user::{ActiveModel, Model as UserModel, UserRole},
     utils::db::{db_to_user_error, hash_password, random_user_id, timestamp_now},
 };
+use async_trait::async_trait;
 use sea_orm::{
     ActiveModelTrait, ActiveValue::NotSet, DatabaseConnection, EntityTrait, Set, Unchanged,
 };
@@ -39,16 +40,32 @@ impl CreateUserData {
     }
 }
 
-pub struct UserRepository {
+#[async_trait]
+pub trait UserRepository {
+    async fn get_by_id(&self, id: String) -> Result<UserModel, ApiError>;
+    async fn create(&self, data: CreateUserData) -> Result<UserModel, ApiError>;
+    async fn update_username(
+        &self,
+        id: String,
+        data: UpdateEmailData,
+    ) -> Result<UserModel, ApiError>;
+
+    async fn delete(&self, id: String) -> Result<(), ApiError>;
+}
+
+pub struct UserService {
     db: &'static DatabaseConnection,
 }
 
-impl UserRepository {
+impl UserService {
     pub fn new(db: &'static DatabaseConnection) -> Self {
         Self { db }
     }
+}
 
-    pub async fn get_by_id(&self, id: String) -> Result<UserModel, ApiError> {
+#[async_trait]
+impl UserRepository for UserService {
+    async fn get_by_id(&self, id: String) -> Result<UserModel, ApiError> {
         if id.len() > 18 {
             return Err(ApiError::InvalidUserIdSize);
         };
@@ -64,7 +81,7 @@ impl UserRepository {
         }
     }
 
-    pub async fn create(&self, data: CreateUserData) -> Result<UserModel, ApiError> {
+    async fn create(&self, data: CreateUserData) -> Result<UserModel, ApiError> {
         match data.is_valid() {
             Some(err) => return Err(err),
             None => {}
@@ -87,7 +104,7 @@ impl UserRepository {
             username: Set(data.username),
             created_at: Set(now),
             updated_at: Set(now),
-            role: Set(UserRole::Common)
+            role: Set(UserRole::Common),
         };
 
         let user = match user.insert(self.db).await {
@@ -98,7 +115,7 @@ impl UserRepository {
         Ok(user)
     }
 
-    pub async fn update_username(
+    async fn update_username(
         &self,
         id: String,
         data: UpdateEmailData,
@@ -114,7 +131,7 @@ impl UserRepository {
             password: NotSet,
             updated_at: NotSet,
             username: Set(data.username),
-            role: NotSet
+            role: NotSet,
         };
 
         log::info!("{:?}", user);
@@ -127,7 +144,7 @@ impl UserRepository {
         Ok(user)
     }
 
-    pub async fn delete(&self, id: String) -> Result<(), ApiError> {
+    async fn delete(&self, id: String) -> Result<(), ApiError> {
         if id.len() > 18 {
             return Err(ApiError::InvalidUserIdSize);
         };
@@ -139,7 +156,7 @@ impl UserRepository {
             password: NotSet,
             updated_at: NotSet,
             username: NotSet,
-            role: NotSet
+            role: NotSet,
         };
 
         let result = match user.delete(self.db).await {

@@ -1,10 +1,11 @@
-use super::cache::CacheService;
+use super::cache::{CacheRepository, CacheService};
 use crate::error::ApiError;
 use crate::model::user::{Column as UserColumn, Entity as UserEntity, UserRole};
 use crate::utils::generic::now_unix_sec;
 use crate::utils::http::DataBody;
 use actix_web::body::BoxBody;
 use actix_web::Responder;
+use async_trait::async_trait;
 use jsonwebtoken::{Algorithm, DecodingKey, EncodingKey, Header, TokenData, Validation};
 use sea_orm::DatabaseConnection;
 use sea_orm::{ColumnTrait, EntityTrait, QueryFilter, QuerySelect};
@@ -76,7 +77,28 @@ impl UserJwtPayload {
 
 const JWT_TOKEN_DURATION: usize = 3600;
 
-pub struct AuthProvider {
+#[async_trait]
+pub trait AuthRepository {
+    async fn generate_token(
+        &self,
+        id: String,
+        email: String,
+        username: String,
+        role: UserRole,
+    ) -> Result<String, ApiError>;
+
+    async fn add_invalidation(
+        &self,
+        id: String,
+        reason: InvalidationReason,
+    ) -> Result<(), ApiError>;
+
+    async fn is_under_invalidation(&self, id: String) -> Result<InvalidatedResult, ApiError>;
+    async fn decode_token(&self, token: String) -> Result<UserJwtPayload, ApiError>;
+    async fn auth_user(&self, email: String, password: String) -> Result<String, ApiError>;
+}
+
+pub struct AuthService {
     db: &'static DatabaseConnection,
     cs: &'static CacheService,
     enc_key: EncodingKey,
@@ -86,7 +108,7 @@ pub struct AuthProvider {
 
 pub const JWT_ALGORITHM: Algorithm = Algorithm::EdDSA;
 
-impl AuthProvider {
+impl AuthService {
     pub fn new(
         db: &'static DatabaseConnection,
         cs: &'static CacheService,
@@ -103,8 +125,11 @@ impl AuthProvider {
             cs,
         }
     }
+}
 
-    pub async fn generate_token(
+#[async_trait]
+impl AuthRepository for AuthService {
+    async fn generate_token(
         &self,
         id: String,
         email: String,
@@ -127,7 +152,7 @@ impl AuthProvider {
             })
     }
 
-    pub async fn add_invalidation(
+    async fn add_invalidation(
         &self,
         id: String,
         reason: InvalidationReason,
@@ -148,7 +173,7 @@ impl AuthProvider {
     }
 
     // Implement later
-    pub async fn is_under_invalidation(&self, id: String) -> Result<InvalidatedResult, ApiError> {
+    async fn is_under_invalidation(&self, id: String) -> Result<InvalidatedResult, ApiError> {
         let id = "invalidation/".to_string() + id.as_str();
 
         let res = self.cs.get(id).await?;
@@ -166,7 +191,7 @@ impl AuthProvider {
         }
     }
 
-    pub async fn decode_token(&self, token: String) -> Result<UserJwtPayload, ApiError> {
+    async fn decode_token(&self, token: String) -> Result<UserJwtPayload, ApiError> {
         let key = self.dec_key.clone();
         let validation = self.validation.clone();
 
@@ -201,7 +226,7 @@ impl AuthProvider {
         }
     }
 
-    pub async fn auth_user(&self, email: String, password: String) -> Result<String, ApiError> {
+    async fn auth_user(&self, email: String, password: String) -> Result<String, ApiError> {
         let user = UserEntity::find()
             .filter(UserColumn::Email.eq(email.clone()))
             .column(UserColumn::Username)

@@ -10,9 +10,7 @@ use actix_cors::Cors;
 use actix_web::{middleware, web::Data, App, HttpServer};
 use env::{env_param, ProcessEnv};
 use jsonwebtoken::{DecodingKey, EncodingKey};
-use repository::{
-    auth::AuthProvider, cache::CacheService, post::PostRepository, user::UserRepository,
-};
+use repository::{auth::AuthService, cache::CacheService, post::PostService, user::UserService};
 use routes::{auth, post, user};
 use sea_orm::{ConnectOptions, Database, DatabaseConnection};
 use std::{
@@ -91,16 +89,16 @@ async fn main() -> Result<(), Error> {
             .allow_any_header()
             .max_age(60 * 60); // 1 hour (Access-Control-Max-Age header)
 
-        let user_repo = UserRepository::new(db_box);
+        let user_repo = UserService::new(db_box);
         let user_repo = Data::new(user_repo);
 
         let auth_service =
-            AuthProvider::new(db_box, cache_box, jwt_enc_key.clone(), jwt_dec_key.clone());
+            AuthService::new(db_box, cache_box, jwt_enc_key.clone(), jwt_dec_key.clone());
         let auth_service = Data::new(auth_service);
 
         let cache_service = Data::new(cache_box);
 
-        let post_repo = PostRepository::new(db_box, cache_box);
+        let post_repo = PostService::new(db_box, cache_box);
         let post_repo = Data::new(post_repo);
 
         App::new()

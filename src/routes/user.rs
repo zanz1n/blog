@@ -3,8 +3,8 @@ use crate::{
     middlewares::auth::AuthorizedUser,
     model::user::{ApiUser, UserRole},
     repository::{
-        auth::{AuthProvider, InvalidationReason},
-        user::{CreateUserData, UpdateEmailData, UserRepository},
+        auth::{AuthRepository, AuthService, InvalidationReason},
+        user::{CreateUserData, UpdateEmailData, UserRepository, UserService},
     },
     utils::http::{DataBody, PathWithId},
 };
@@ -15,7 +15,7 @@ use actix_web::{
 
 #[get("/user/{id}")]
 async fn get_by_id(
-    user_repo: Data<UserRepository>,
+    user_repo: Data<UserService>,
     path_params: Path<PathWithId<String>>,
 ) -> Result<ApiUser, ApiError> {
     let user = user_repo.get_by_id(path_params.id()).await?;
@@ -25,7 +25,7 @@ async fn get_by_id(
 
 #[get("/user/self")]
 async fn get_self(
-    user_repo: Data<UserRepository>,
+    user_repo: Data<UserService>,
     token: AuthorizedUser,
 ) -> Result<ApiUser, ApiError> {
     let user = user_repo.get_by_id(token.token.sub).await?;
@@ -35,7 +35,7 @@ async fn get_self(
 
 #[post("/user")]
 async fn create(
-    user_repo: Data<UserRepository>,
+    user_repo: Data<UserService>,
     data: Json<CreateUserData>,
 ) -> Result<ApiUser, ApiError> {
     let user = user_repo.create(data.0).await?;
@@ -45,7 +45,7 @@ async fn create(
 
 #[put("/user/{id}/invalidate")]
 async fn invalidate_user(
-    auth_repository: Data<AuthProvider>,
+    auth_repository: Data<AuthService>,
     token: AuthorizedUser,
     params: Path<PathWithId<String>>,
 ) -> Result<DataBody<Option<()>>, ApiError> {
@@ -62,7 +62,7 @@ async fn invalidate_user(
 
 #[put("/user/{id}/username")]
 async fn update_username(
-    user_repo: Data<UserRepository>,
+    user_repo: Data<UserService>,
     data: Json<UpdateEmailData>,
     token: AuthorizedUser,
     params: Path<PathWithId<String>>,
@@ -78,8 +78,8 @@ async fn update_username(
 
 #[delete("/user/{id}")]
 async fn delete_user(
-    user_repo: Data<UserRepository>,
-    auth_service: Data<AuthProvider>,
+    user_repo: Data<UserService>,
+    auth_service: Data<AuthService>,
     token: AuthorizedUser,
     params: Path<PathWithId<String>>,
 ) -> Result<DataBody<Option<u8>>, ApiError> {

@@ -1,9 +1,10 @@
-use super::cache::CacheService;
+use super::cache::{CacheRepository, CacheService};
 use crate::{
     error::ApiError,
     model::post::{ActiveModel, Column as PostColumn, Entity as PostEntity, Model as PostModel},
     utils::db::{random_post_id, timestamp_now, USER_ID_SIZE},
 };
+use async_trait::async_trait;
 use sea_orm::{
     ActiveModelTrait, ColumnTrait, DatabaseConnection, DbErr, EntityTrait, QueryFilter, QueryOrder,
     QuerySelect, Set,
@@ -34,21 +35,28 @@ impl CreatePostData {
     }
 }
 
-pub struct PostRepository {
+#[async_trait]
+pub trait PostRepository {
+    async fn create(&self, user_id: String, data: CreatePostData) -> Result<PostModel, ApiError>;
+    async fn get_by_id(&self, id: String) -> Result<PostModel, ApiError>;
+    async fn get_user_posts(&self, id: String, limit: u64) -> Result<Vec<PostModel>, ApiError>;
+    async fn get_recomendation(&self, limit: usize) -> Result<Vec<PostModel>, ApiError>;
+}
+
+pub struct PostService {
     db: &'static DatabaseConnection,
     cm: &'static CacheService,
 }
 
-impl PostRepository {
+impl PostService {
     pub fn new(db: &'static DatabaseConnection, cm: &'static CacheService) -> Self {
         Self { db, cm }
     }
+}
 
-    pub async fn create(
-        &self,
-        user_id: String,
-        data: CreatePostData,
-    ) -> Result<PostModel, ApiError> {
+#[async_trait]
+impl PostRepository for PostService {
+    async fn create(&self, user_id: String, data: CreatePostData) -> Result<PostModel, ApiError> {
         if let Some(err) = data.is_valid() {
             return Err(err);
         }
@@ -79,7 +87,7 @@ impl PostRepository {
         Ok(post)
     }
 
-    pub async fn get_by_id(&self, id: String) -> Result<PostModel, ApiError> {
+    async fn get_by_id(&self, id: String) -> Result<PostModel, ApiError> {
         let result = PostEntity::find_by_id(id)
             // .inner_join(UserEntity)
             .one(self.db)
@@ -101,7 +109,7 @@ impl PostRepository {
         }
     }
 
-    pub async fn get_user_posts(&self, id: String, limit: u64) -> Result<Vec<PostModel>, ApiError> {
+    async fn get_user_posts(&self, id: String, limit: u64) -> Result<Vec<PostModel>, ApiError> {
         if id.len() != USER_ID_SIZE {
             return Err(ApiError::InvalidUserIdSize);
         }
@@ -129,7 +137,7 @@ impl PostRepository {
         Ok(result)
     }
 
-    pub async fn get_recomendation(&self, limit: usize) -> Result<Vec<PostModel>, ApiError> {
+    async fn get_recomendation(&self, limit: usize) -> Result<Vec<PostModel>, ApiError> {
         let result = self.cm.get("post-recomendation".to_string()).await?;
 
         if let Some(cache) = result {

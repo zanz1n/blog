@@ -1,10 +1,18 @@
-use std::io::{self, Error};
-
 use crate::error::ApiError;
+use async_trait::async_trait;
 use deadpool_redis::{
     redis::{self, AsyncCommands, Expiry},
     Config, Connection, Pool, Runtime,
 };
+use std::io::{self, Error};
+
+#[async_trait]
+pub trait CacheRepository {
+    async fn get(&self, key: String) -> Result<Option<String>, ApiError>;
+    async fn get_ttl(&self, key: String, ttl: usize) -> Result<Option<String>, ApiError>;
+    async fn set(&self, key: String, value: String) -> Result<(), ApiError>;
+    async fn set_ttl(&self, key: String, value: String, ttl: usize) -> Result<(), ApiError>;
+}
 
 pub struct CacheService {
     client: Pool,
@@ -35,8 +43,11 @@ impl CacheService {
             Err(ApiError::InternalServerError)
         })
     }
+}
 
-    pub async fn get(&self, key: String) -> Result<Option<String>, ApiError> {
+#[async_trait]
+impl CacheRepository for CacheService {
+    async fn get(&self, key: String) -> Result<Option<String>, ApiError> {
         let mut conn = self.get_conn().await?;
 
         let value: Option<String> = conn.get(key).await.or_else(|e| {
@@ -47,7 +58,7 @@ impl CacheService {
         Ok(value)
     }
 
-    pub async fn get_ttl(&self, key: String, ttl: usize) -> Result<Option<String>, ApiError> {
+    async fn get_ttl(&self, key: String, ttl: usize) -> Result<Option<String>, ApiError> {
         let mut conn = self.get_conn().await?;
 
         let value: Option<String> = conn.get_ex(key, Expiry::EX(ttl)).await.or_else(|e| {
@@ -58,7 +69,7 @@ impl CacheService {
         Ok(value)
     }
 
-    pub async fn set(&self, key: String, value: String) -> Result<(), ApiError> {
+    async fn set(&self, key: String, value: String) -> Result<(), ApiError> {
         let mut conn = self.get_conn().await?;
 
         conn.set(key, value).await.or_else(|e| {
@@ -69,7 +80,7 @@ impl CacheService {
         Ok(())
     }
 
-    pub async fn set_ttl(&self, key: String, value: String, ttl: usize) -> Result<(), ApiError> {
+    async fn set_ttl(&self, key: String, value: String, ttl: usize) -> Result<(), ApiError> {
         let mut conn = self.get_conn().await?;
 
         conn.set_ex(key, value, ttl).await.or_else(|e| {
