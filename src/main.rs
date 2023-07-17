@@ -10,12 +10,18 @@ use actix_cors::Cors;
 use actix_web::{middleware, web::Data, App, HttpServer};
 use env::{env_param, ProcessEnv};
 use jsonwebtoken::{DecodingKey, EncodingKey};
-use repository::{auth::AuthService, cache::CacheService, post::PostService, user::UserService};
+use repository::{
+    auth::{AuthRepository, AuthService},
+    cache::CacheService,
+    post::{PostRepository, PostService},
+    user::{UserRepository, UserService},
+};
 use routes::{auth, post, user};
 use sea_orm::{ConnectOptions, Database, DatabaseConnection};
 use std::{
     fs,
     io::{Error, ErrorKind},
+    sync::Arc,
     time::Duration,
 };
 use utils::http::app_json_error_handler;
@@ -72,11 +78,17 @@ async fn main() -> Result<(), Error> {
         .await
         .or_else(|e| Err(Error::new(ErrorKind::ConnectionRefused, e)))?;
 
-    // Using the box structure to allow multi-thread access to the
-    // DatabaseConnection and Pool<M, W> instance.
-    let db_box: &'static DatabaseConnection = Box::leak(Box::new(db));
+    let db: &'static DatabaseConnection = Box::leak(Box::new(db));
 
-    let cache_box: &'static CacheService = Box::leak(Box::new(cache_service));
+    let cache_service: &'static CacheService = Box::leak(Box::new(cache_service));
+
+    let user_service = UserService::new(db);
+    let auth_service = AuthService::new(db, cache_service, jwt_enc_key, jwt_dec_key);
+    let post_service = PostService::new(db, cache_service);
+
+    let auth_repo: Arc<dyn AuthRepository> = Arc::new(auth_service);
+    let post_repo: Arc<dyn PostRepository> = Arc::new(post_service);
+    let user_repo: Arc<dyn UserRepository> = Arc::new(user_service);
 
     // Actix web config boilerplate
     let mut server = HttpServer::new(move || {
@@ -89,24 +101,11 @@ async fn main() -> Result<(), Error> {
             .allow_any_header()
             .max_age(60 * 60); // 1 hour (Access-Control-Max-Age header)
 
-        let user_repo = UserService::new(db_box);
-        let user_repo = Data::new(user_repo);
-
-        let auth_service =
-            AuthService::new(db_box, cache_box, jwt_enc_key.clone(), jwt_dec_key.clone());
-        let auth_service = Data::new(auth_service);
-
-        let cache_service = Data::new(cache_box);
-
-        let post_repo = PostService::new(db_box, cache_box);
-        let post_repo = Data::new(post_repo);
-
         App::new()
             .app_data(app_json_error_handler())
-            .app_data(user_repo)
-            .app_data(post_repo)
-            .app_data(auth_service)
-            .app_data(cache_service)
+            .app_data(Data::from(user_repo.clone()))
+            .app_data(Data::from(post_repo.clone()))
+            .app_data(Data::from(auth_repo.clone()))
             .wrap(actix_logger)
             .wrap(actix_path_normalizer)
             .wrap(actix_cors)

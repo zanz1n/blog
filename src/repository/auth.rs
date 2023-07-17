@@ -78,7 +78,7 @@ impl UserJwtPayload {
 const JWT_TOKEN_DURATION: usize = 3600;
 
 #[async_trait]
-pub trait AuthRepository {
+pub trait AuthRepository: Sync + Send {
     async fn generate_token(
         &self,
         id: String,

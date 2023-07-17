@@ -41,7 +41,7 @@ impl CreateUserData {
 }
 
 #[async_trait]
-pub trait UserRepository {
+pub trait UserRepository: Sync + Send {
     async fn get_by_id(&self, id: String) -> Result<UserModel, ApiError>;
     async fn create(&self, data: CreateUserData) -> Result<UserModel, ApiError>;
     async fn update_username(
@@ -53,6 +53,7 @@ pub trait UserRepository {
     async fn delete(&self, id: String) -> Result<(), ApiError>;
 }
 
+#[derive(Clone)]
 pub struct UserService {
     db: &'static DatabaseConnection,
 }

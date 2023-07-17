@@ -7,13 +7,14 @@ use deadpool_redis::{
 use std::io::{self, Error};
 
 #[async_trait]
-pub trait CacheRepository {
+pub trait CacheRepository: Sync + Send {
     async fn get(&self, key: String) -> Result<Option<String>, ApiError>;
     async fn get_ttl(&self, key: String, ttl: usize) -> Result<Option<String>, ApiError>;
     async fn set(&self, key: String, value: String) -> Result<(), ApiError>;
     async fn set_ttl(&self, key: String, value: String, ttl: usize) -> Result<(), ApiError>;
 }
 
+#[derive(Clone)]
 pub struct CacheService {
     client: Pool,
 }

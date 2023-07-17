@@ -3,8 +3,8 @@ use crate::{
     middlewares::auth::AuthorizedUser,
     model::user::ApiUser,
     repository::{
-        auth::{AuthRepository, AuthService, UserJwtPayload},
-        user::{CreateUserData, UserRepository, UserService},
+        auth::{AuthRepository, UserJwtPayload},
+        user::{CreateUserData, UserRepository},
     },
     utils::http::serialize_response,
 };
@@ -59,7 +59,7 @@ async fn get_self(token: AuthorizedUser) -> Result<UserJwtPayload, ApiError> {
 
 #[post("/auth/signin")]
 async fn signin(
-    auth_provider: Data<AuthService>,
+    auth_provider: Data<dyn AuthRepository>,
     body: Json<SignInRequestBody>,
 ) -> Result<SignInResponseBody, ApiError> {
     let body = body.0;
@@ -72,8 +72,8 @@ async fn signin(
 
 #[post("/auth/signup")]
 async fn signup(
-    auth_provider: Data<AuthService>,
-    user_repo: Data<UserService>,
+    auth_provider: Data<dyn AuthRepository>,
+    user_repo: Data<dyn UserRepository>,
     body: Json<CreateUserData>,
 ) -> Result<CustomizeResponder<SignUpResponseBody>, ApiError> {
     let user = user_repo.create(body.0).await?;

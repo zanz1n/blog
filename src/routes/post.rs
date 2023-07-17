@@ -2,7 +2,7 @@ use crate::{
     error::ApiError,
     middlewares::auth::AuthorizedUser,
     model::post::Model as PostModel,
-    repository::post::{CreatePostData, PostRepository, PostService},
+    repository::post::{CreatePostData, PostRepository},
     utils::http::{DataBody, LimitQueryParams, PathWithId},
 };
 use actix_web::{
@@ -12,7 +12,7 @@ use actix_web::{
 
 #[post("/post")]
 async fn create_post(
-    post_repo: Data<PostService>,
+    post_repo: Data<dyn PostRepository>,
     data: Json<CreatePostData>,
     auth_data: AuthorizedUser,
 ) -> Result<PostModel, ApiError> {
@@ -21,7 +21,7 @@ async fn create_post(
 
 #[get("/posts")]
 async fn get_posts_recomendation(
-    post_repo: Data<PostService>,
+    post_repo: Data<dyn PostRepository>,
     query: Query<LimitQueryParams<Option<usize>>>,
 ) -> Result<DataBody<Vec<PostModel>>, ApiError> {
     let result = post_repo
@@ -33,7 +33,7 @@ async fn get_posts_recomendation(
 
 #[get("/post/{id}")]
 async fn get_post_by_id(
-    post_repo: Data<PostService>,
+    post_repo: Data<dyn PostRepository>,
     params: Path<PathWithId<String>>,
 ) -> Result<PostModel, ApiError> {
     post_repo.get_by_id(params.id()).await
@@ -41,7 +41,7 @@ async fn get_post_by_id(
 
 #[get("/user/{id}/posts")]
 async fn get_user_posts(
-    post_repo: Data<PostService>,
+    post_repo: Data<dyn PostRepository>,
     params: Path<PathWithId<String>>,
     query: Query<LimitQueryParams<Option<u64>>>,
 ) -> Result<DataBody<Vec<PostModel>>, ApiError> {

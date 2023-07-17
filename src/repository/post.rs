@@ -36,7 +36,7 @@ impl CreatePostData {
 }
 
 #[async_trait]
-pub trait PostRepository {
+pub trait PostRepository: Sync + Send {
     async fn create(&self, user_id: String, data: CreatePostData) -> Result<PostModel, ApiError>;
     async fn get_by_id(&self, id: String) -> Result<PostModel, ApiError>;
     async fn get_user_posts(&self, id: String, limit: u64) -> Result<Vec<PostModel>, ApiError>;
