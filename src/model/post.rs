@@ -24,7 +24,7 @@ pub struct Model {
 }
 
 impl Model {
-    pub fn with_user(self, user: ApiUser) -> PostWithUser {
+    pub fn with_user(self, user: Option<ApiUser>) -> PostWithUser {
         PostWithUser::new(self, user)
     }
 }
@@ -40,11 +40,11 @@ pub struct PostWithUser {
     pub content: String,
     #[serde(rename = "thumbImage")]
     pub thumb_image: Option<String>,
-    pub user: ApiUser,
+    pub user: Option<ApiUser>,
 }
 
 impl PostWithUser {
-    pub fn new(model: Model, user: ApiUser) -> Self {
+    pub fn new(model: Model, user: Option<ApiUser>) -> Self {
         Self {
             id: model.id,
             created_at: model.created_at,
@@ -54,6 +54,14 @@ impl PostWithUser {
             thumb_image: model.thumb_image,
             user,
         }
+    }
+}
+
+impl actix_web::Responder for PostWithUser {
+    type Body = BoxBody;
+
+    fn respond_to(self, req: &HttpRequest) -> HttpResponse<Self::Body> {
+        DataBody::new(self, "Success").respond_to(req)
     }
 }
 

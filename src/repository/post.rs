@@ -1,7 +1,10 @@
 use super::cache::{CacheRepository, CacheService};
 use crate::{
     error::ApiError,
-    model::post::{ActiveModel, Column as PostColumn, Entity as PostEntity, Model as PostModel},
+    model::post::{
+        ActiveModel, Column as PostColumn, Entity as PostEntity, Model as PostModel, PostWithUser,
+    },
+    model::user::Entity as UserEntity,
     utils::db::{random_post_id, timestamp_now, POST_ID_SIZE, USER_ID_SIZE},
 };
 use async_trait::async_trait;
@@ -38,7 +41,7 @@ impl CreatePostData {
 #[async_trait]
 pub trait PostRepository: Sync + Send {
     async fn create(&self, user_id: String, data: CreatePostData) -> Result<PostModel, ApiError>;
-    async fn get_by_id(&self, id: String) -> Result<PostModel, ApiError>;
+    async fn get_by_id(&self, id: String) -> Result<PostWithUser, ApiError>;
     async fn get_user_posts(
         &self,
         id: String,
@@ -96,27 +99,37 @@ impl PostRepository for PostService {
         Ok(post)
     }
 
-    async fn get_by_id(&self, id: String) -> Result<PostModel, ApiError> {
+    async fn get_by_id(&self, id: String) -> Result<PostWithUser, ApiError> {
         if id.len() != POST_ID_SIZE {
             return Err(ApiError::InvalidPostIdSize);
         }
 
-        let result = PostEntity::find_by_id(id)
-            // .inner_join(UserEntity)
-            .one(self.db)
-            .await
-            .or_else(|e| {
-                Err(match e {
-                    DbErr::RecordNotFound(_) => ApiError::PostNotFound,
-                    e => {
-                        log::error!(target: "database_user_errors", "{}", e);
-                        ApiError::InternalServerError
-                    }
-                })
-            })?;
+        let post_result = PostEntity::find_by_id(id).one(self.db).await.or_else(|e| {
+            Err(match e {
+                DbErr::RecordNotFound(_) => ApiError::PostNotFound,
+                e => {
+                    log::error!(target: "database_post_errors", "{}", e);
+                    ApiError::InternalServerError
+                }
+            })
+        })?;
 
-        if let Some(post) = result {
-            Ok(post)
+        if let Some(post) = post_result {
+            let user_result = UserEntity::find_by_id(post.user_id.clone())
+                .one(self.db)
+                .await
+                .or_else(|e| {
+                    log::error!(target: "database_user_errors", "{}", e);
+                    Err(ApiError::InternalServerError)
+                })?;
+
+            Ok(PostWithUser::new(
+                post,
+                match user_result {
+                    Some(v) => Some(v.to_sendable()),
+                    None => None,
+                },
+            ))
         } else {
             Err(ApiError::PostNotFound)
         }
