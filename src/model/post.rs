@@ -10,16 +10,20 @@ pub struct Model {
     #[sea_orm(primary_key, column_type = "String(Some(24))")]
     pub id: String,
     #[sea_orm(column_name = "createdAt")]
+    #[serde(rename = "createdAt")]
     pub created_at: DateTime,
     #[sea_orm(column_name = "updatedAt")]
+    #[serde(rename = "updatedAt")]
     pub updated_at: DateTime,
     #[sea_orm(column_type = "String(Some(64))", unique, indexed)]
     pub slug: String,
     #[sea_orm(column_type = "Text")]
     pub content: String,
     #[sea_orm(column_name = "thumbImageKey", column_type = "String(Some(128))")]
+    #[serde(rename = "thumbImage")]
     pub thumb_image: Option<String>,
     #[sea_orm(column_name = "userId", column_type = "String(Some(18))", indexed)]
+    #[serde(rename = "userId")]
     pub user_id: String,
 }
 
