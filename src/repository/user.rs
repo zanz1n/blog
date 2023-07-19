@@ -2,7 +2,7 @@ use crate::{
     error::ApiError,
     model::user::Entity as UserEntity,
     model::user::{ActiveModel, Model as UserModel, UserRole},
-    utils::db::{db_to_user_error, hash_password, random_user_id, timestamp_now},
+    utils::db::{db_to_user_error, hash_password, random_user_id, timestamp_now, USER_ID_SIZE},
 };
 use async_trait::async_trait;
 use sea_orm::{
@@ -67,7 +67,7 @@ impl UserService {
 #[async_trait]
 impl UserRepository for UserService {
     async fn get_by_id(&self, id: String) -> Result<UserModel, ApiError> {
-        if id.len() > 18 {
+        if id.len() != USER_ID_SIZE {
             return Err(ApiError::InvalidUserIdSize);
         };
 
@@ -121,7 +121,7 @@ impl UserRepository for UserService {
         id: String,
         data: UpdateEmailData,
     ) -> Result<UserModel, ApiError> {
-        if id.len() > 18 {
+        if id.len() != USER_ID_SIZE {
             return Err(ApiError::InvalidUserIdSize);
         };
 
@@ -146,7 +146,7 @@ impl UserRepository for UserService {
     }
 
     async fn delete(&self, id: String) -> Result<(), ApiError> {
-        if id.len() > 18 {
+        if id.len() != USER_ID_SIZE {
             return Err(ApiError::InvalidUserIdSize);
         };
 
