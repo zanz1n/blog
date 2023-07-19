@@ -3,7 +3,7 @@ use crate::{
     middlewares::auth::AuthorizedUser,
     model::post::Model as PostModel,
     repository::post::{CreatePostData, PostRepository},
-    utils::http::{DataBody, LimitQueryParams, PathWithId},
+    utils::http::{CursorLimitQueryParams, DataBody, PathWithId},
 };
 use actix_web::{
     get, post,
@@ -22,10 +22,13 @@ async fn create_post(
 #[get("/posts")]
 async fn get_posts_recomendation(
     post_repo: Data<dyn PostRepository>,
-    query: Query<LimitQueryParams<Option<usize>>>,
+    query: Query<CursorLimitQueryParams<Option<usize>, Option<usize>>>,
 ) -> Result<DataBody<Vec<PostModel>>, ApiError> {
     let result = post_repo
-        .get_recomendation(query.limit.unwrap_or_else(|| 200))
+        .get_recomendation(
+            query.limit.unwrap_or_else(|| 200),
+            query.cursor.unwrap_or_else(|| 0),
+        )
         .await?;
 
     Ok(DataBody::new(result, "Success"))
@@ -43,10 +46,14 @@ async fn get_post_by_id(
 async fn get_user_posts(
     post_repo: Data<dyn PostRepository>,
     params: Path<PathWithId<String>>,
-    query: Query<LimitQueryParams<Option<u64>>>,
+    query: Query<CursorLimitQueryParams<Option<u64>, Option<u64>>>,
 ) -> Result<DataBody<Vec<PostModel>>, ApiError> {
     let result = post_repo
-        .get_user_posts(params.id(), query.limit.unwrap_or_else(|| 200))
+        .get_user_posts(
+            params.id(),
+            query.limit.unwrap_or_else(|| 200),
+            query.cursor.unwrap_or_else(|| 0),
+        )
         .await?;
 
     Ok(DataBody::new(result, "Success"))

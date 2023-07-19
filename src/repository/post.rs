@@ -2,7 +2,7 @@ use super::cache::{CacheRepository, CacheService};
 use crate::{
     error::ApiError,
     model::post::{ActiveModel, Column as PostColumn, Entity as PostEntity, Model as PostModel},
-    utils::db::{random_post_id, timestamp_now, USER_ID_SIZE},
+    utils::db::{random_post_id, timestamp_now, POST_ID_SIZE, USER_ID_SIZE},
 };
 use async_trait::async_trait;
 use sea_orm::{
@@ -39,8 +39,17 @@ impl CreatePostData {
 pub trait PostRepository: Sync + Send {
     async fn create(&self, user_id: String, data: CreatePostData) -> Result<PostModel, ApiError>;
     async fn get_by_id(&self, id: String) -> Result<PostModel, ApiError>;
-    async fn get_user_posts(&self, id: String, limit: u64) -> Result<Vec<PostModel>, ApiError>;
-    async fn get_recomendation(&self, limit: usize) -> Result<Vec<PostModel>, ApiError>;
+    async fn get_user_posts(
+        &self,
+        id: String,
+        limit: u64,
+        offset: u64,
+    ) -> Result<Vec<PostModel>, ApiError>;
+    async fn get_recomendation(
+        &self,
+        limit: usize,
+        cursor: usize,
+    ) -> Result<Vec<PostModel>, ApiError>;
 }
 
 pub struct PostService {
@@ -88,6 +97,10 @@ impl PostRepository for PostService {
     }
 
     async fn get_by_id(&self, id: String) -> Result<PostModel, ApiError> {
+        if id.len() != POST_ID_SIZE {
+            return Err(ApiError::InvalidPostIdSize);
+        }
+
         let result = PostEntity::find_by_id(id)
             // .inner_join(UserEntity)
             .one(self.db)
@@ -109,7 +122,12 @@ impl PostRepository for PostService {
         }
     }
 
-    async fn get_user_posts(&self, id: String, limit: u64) -> Result<Vec<PostModel>, ApiError> {
+    async fn get_user_posts(
+        &self,
+        id: String,
+        limit: u64,
+        offset: u64,
+    ) -> Result<Vec<PostModel>, ApiError> {
         if id.len() != USER_ID_SIZE {
             return Err(ApiError::InvalidUserIdSize);
         }
@@ -123,6 +141,7 @@ impl PostRepository for PostService {
         let result = PostEntity::find()
             .filter(PostColumn::UserId.eq(id))
             .order_by_desc(PostColumn::CreatedAt)
+            .offset(offset)
             .limit(limit)
             .all(self.db)
             .await
@@ -137,20 +156,18 @@ impl PostRepository for PostService {
         Ok(result)
     }
 
-    async fn get_recomendation(&self, limit: usize) -> Result<Vec<PostModel>, ApiError> {
+    async fn get_recomendation(
+        &self,
+        limit: usize,
+        cursor: usize,
+    ) -> Result<Vec<PostModel>, ApiError> {
         let result = self.cm.get("post-recomendation".to_string()).await?;
 
-        if let Some(cache) = result {
-            let mut cache: Vec<PostModel> = serde_json::from_str(cache.as_str()).or_else(|e| {
+        let mut result = if let Some(cache) = result {
+            serde_json::from_str::<Vec<PostModel>>(cache.as_str()).or_else(|e| {
                 log::error!("Failed to decode cached recomendation: {}", e);
                 Err(ApiError::InternalServerError)
-            })?;
-
-            if limit <= cache.len() {
-                cache = cache[0..limit].to_vec()
-            }
-
-            Ok(cache)
+            })?
         } else {
             let mut result = PostEntity::find()
                 .order_by_desc(PostColumn::CreatedAt)
@@ -164,6 +181,12 @@ impl PostRepository for PostService {
                         Err(ApiError::InternalServerError)
                     }
                 })?;
+
+            for i in result.iter_mut() {
+                if i.content.len() > 256 {
+                    i.content = i.content.split_at(250).0.to_string() + " [...]";
+                }
+            }
 
             match serde_json::to_string(&result) {
                 Ok(v) => {
@@ -181,11 +204,17 @@ impl PostRepository for PostService {
                 }
             }
 
-            if limit <= result.len() {
-                result = result[0..limit].to_vec()
-            }
+            result
+        };
 
-            Ok(result)
+        if cursor >= result.len() {
+            return Err(ApiError::PostNotFound);
         }
+
+        if limit <= result.len() {
+            result = result[cursor..limit].to_vec()
+        }
+
+        Ok(result)
     }
 }

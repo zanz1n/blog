@@ -17,18 +17,27 @@ pub struct DataBody<T: Serialize> {
 }
 
 #[derive(Clone, Debug, Copy, Serialize, Deserialize)]
-pub struct PathWithId<T: Clone> {
+pub struct PathWithId<T> {
     pub id: T,
 }
 
 #[derive(Clone, Debug, Copy, Serialize, Deserialize)]
-pub struct LimitQueryParams<T: Clone> {
-    pub limit: T,
+pub struct CursorLimitQueryParams<C, L> {
+    pub limit: L,
+    pub cursor: C,
 }
 
-impl<T: Clone> LimitQueryParams<T> {
-    pub fn limit(&self) -> T {
+impl<C, L> CursorLimitQueryParams<C, L>
+where
+    C: Clone,
+    L: Clone,
+{
+    pub fn limit(&self) -> L {
         self.limit.clone()
+    }
+
+    pub fn cursor(&self) -> C {
+        self.cursor.clone()
     }
 }
 
