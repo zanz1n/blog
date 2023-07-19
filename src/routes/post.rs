@@ -1,7 +1,7 @@
 use crate::{
     error::ApiError,
     middlewares::auth::AuthorizedUser,
-    model::post::Model as PostModel,
+    model::post::{Model as PostModel, PostWithUser},
     repository::post::{CreatePostData, PostRepository},
     utils::http::{CursorLimitQueryParams, DataBody, PathWithId},
 };
@@ -38,7 +38,7 @@ async fn get_posts_recomendation(
 async fn get_post_by_id(
     post_repo: Data<dyn PostRepository>,
     params: Path<PathWithId<String>>,
-) -> Result<PostModel, ApiError> {
+) -> Result<PostWithUser, ApiError> {
     post_repo.get_by_id(params.id()).await
 }
 
