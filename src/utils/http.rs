@@ -1,11 +1,11 @@
+use crate::error::ErrorResponseBody;
 use actix_web::{
     body::BoxBody,
     http::{header::ContentType, Method, StatusCode},
     web::JsonConfig,
-    HttpResponse, Responder, ResponseError,
+    HttpResponse, Responder,
 };
 use serde::{Deserialize, Serialize};
-use std::fmt::Display;
 
 pub const ENCODING_FAILED_BODY: &'static str =
     "{\"error\":\"The intended response body could not be encoded, this occurrence was logged\"}";
@@ -80,35 +80,6 @@ fn code_from_method(method: Method) -> StatusCode {
     }
 }
 
-#[derive(Default, Debug, Serialize, Deserialize)]
-pub struct ErrorResponseBody {
-    error: String,
-}
-
-impl ErrorResponseBody {
-    pub fn from<T: ToString>(el: T) -> Self {
-        Self {
-            error: el.to_string(),
-        }
-    }
-}
-
-impl Display for ErrorResponseBody {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.write_str(format!("{:?}", self).as_str())
-    }
-}
-
-impl ResponseError for ErrorResponseBody {
-    fn status_code(&self) -> StatusCode {
-        StatusCode::BAD_REQUEST
-    }
-
-    fn error_response(&self) -> HttpResponse<BoxBody> {
-        serialize_response(&self, self.status_code())
-    }
-}
-
 impl<T: Serialize> DataBody<T> {
     pub fn new(data: T, msg: &str) -> DataBody<T> {
         DataBody {
@@ -135,5 +106,5 @@ pub fn app_json_error_handler() -> JsonConfig {
             (m.type_() == "text" && m.subtype() == "plain")
                 || (m.type_() == "application" && m.subtype() == "json")
         })
-        .error_handler(|a, _| ErrorResponseBody::from(a).into())
+        .error_handler(|a, _| ErrorResponseBody::new(a, 4000).into())
 }
