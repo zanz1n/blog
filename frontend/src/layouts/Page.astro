@@ -27,3 +27,35 @@ const { title, description } = Astro.props;
     <slot />
   </body>
 </html>
+
+<style is:global>
+  :root {
+    --text-color: #000000;
+    --background: #f6f6f6;
+    --hover-text: #505050;
+    --button-shadow: rgba(0, 0, 0, 0.48);
+    --button-hover-shadow: rgba(0, 0, 0, 0.7);
+  }
+
+  @media screen and (prefers-color-scheme: dark) {
+    :root {
+      --text-color: #dddddd;
+      --background: #161616;
+      --hover-text: #ffffff;
+      --button-shadow: rgba(204, 204, 204, 0.27);
+      --button-hover-shadow: rgba(204, 204, 204, 0.7);
+    }
+  }
+
+  html {
+    font-family: "Lato", sans-serif;
+    background-color: var(--background);
+    color: var(--text-color);
+  }
+
+  * {
+    padding: 0;
+    margin: 0;
+    box-sizing: border-box;
+  }
+</style>
