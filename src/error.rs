@@ -11,7 +11,7 @@ pub enum ApiError {
     InvalidUserIdSize,
     #[error("Something went wrong while processing your request, try again later")]
     InternalServerError,
-    #[error("Failed to decode request body. Invalid payload")]
+    #[error("Failed to decode request body, invalid payload!")]
     InvalidBodyPayload,
     #[error(
         "Your password length must be greater than 6 and must not contain your username or email"
@@ -27,9 +27,9 @@ pub enum ApiError {
     UserAlreadyExists,
     #[error("Password do not match or user doesn't exist")]
     UserUnauthorized,
-    #[error("Your jwt token does not contain valid metadata. Invalid")]
+    #[error("Your jwt token does not contain valid metadata")]
     InvalidAuthToken,
-    #[error("Your jwt token is no longer valid. Expired")]
+    #[error("Your jwt token is no longer valid, expired!")]
     ExpiredAuthToken,
     #[error("This route requires authorization but no headers or cookies was provided")]
     AuthorizationRequired,
