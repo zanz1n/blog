@@ -6,7 +6,10 @@ use crate::utils::http::DataBody;
 use actix_web::body::BoxBody;
 use actix_web::Responder;
 use async_trait::async_trait;
-use jsonwebtoken::{Algorithm, DecodingKey, EncodingKey, Header, TokenData, Validation};
+use jsonwebtoken::{
+    errors::ErrorKind as JwtErrorKind, Algorithm, DecodingKey, EncodingKey, Header, TokenData,
+    Validation,
+};
 use sea_orm::DatabaseConnection;
 use sea_orm::{ColumnTrait, EntityTrait, QueryFilter, QuerySelect};
 use serde::{Deserialize, Serialize};
@@ -197,8 +200,12 @@ impl AuthRepository for AuthService {
 
         let token = spawn_blocking(move || {
             let token: TokenData<UserJwtPayload> =
-                jsonwebtoken::decode(token.as_str(), &key, &validation)
-                    .or_else(|_| Err(ApiError::InvalidAuthToken))?;
+                jsonwebtoken::decode(token.as_str(), &key, &validation).or_else(|e| {
+                    Err(match e.kind() {
+                        JwtErrorKind::ExpiredSignature => ApiError::ExpiredAuthToken,
+                        _ => ApiError::InvalidAuthToken,
+                    })
+                })?;
 
             if token.header.alg != JWT_ALGORITHM {
                 Err(ApiError::InvalidAuthToken)
