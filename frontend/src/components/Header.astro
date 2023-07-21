@@ -1,0 +1,66 @@
+---
+import "./Header.css";
+
+const { pathname } = Astro.url;
+
+interface HeaderRoute {
+  name: string;
+  href: string;
+  match?: RegExp;
+}
+
+const homeRoutes: HeaderRoute[] = [
+  {
+    name: "Home",
+    href: "/",
+  },
+  {
+    name: "Posts",
+    href: "/posts",
+    match: /\/posts\b([/]*)/g,
+  },
+];
+
+function matchPattern(route: HeaderRoute, path: string) {
+  if (route.match) {
+    const res = path.match(route.match);
+
+    if (!res || res[0]?.length != path.length) {
+      return false;
+    }
+
+    return true;
+  }
+
+  return path == route.href;
+}
+---
+
+<div class="container">
+  <header>
+    <a href="/">
+      <div class="left">
+        <img src="/favicon.svg" alt="Icon" width="52px" height="52px" />
+        <h1>Astro blog</h1>
+      </div>
+    </a>
+    <div class="right">
+      <nav>
+        {
+          homeRoutes.map((r) => {
+            if (matchPattern(r, pathname)) {
+              return (
+                <a class="current" href={r.href}>
+                  {r.name}
+                </a>
+              );
+            }
+            return <a href={r.href}>{r.name}</a>;
+          })
+        }
+      </nav>
+      <button class="loginBtn">Login</button>
+    </div>
+  </header>
+  <hr />
+</div>
