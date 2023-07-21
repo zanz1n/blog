@@ -27,6 +27,21 @@ const { title, description } = Astro.props;
     <meta name="viewport" content="width=device-width" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="generator" content={Astro.generator} />
+    <script is:inline>
+      let theme = localStorage.getItem("theme");
+
+      if (!theme) {
+        if (!window.matchMedia) {
+          theme = "light";
+        } else if (window.matchMedia("(prefers-color-scheme: dark)").matches) {
+          theme = "dark";
+        } else {
+          theme = "light";
+        }
+      }
+
+      document.documentElement.setAttribute("data-theme", theme);
+    </script>
     {
       fontPreload.map((href) => {
         return (
@@ -57,14 +72,12 @@ const { title, description } = Astro.props;
     --button-hover-shadow: rgba(0, 0, 0, 0.7);
   }
 
-  @media screen and (prefers-color-scheme: dark) {
-    :root {
-      --text-color: #cfcfcf;
-      --background: #161616;
-      --hover-text: #ffffff;
-      --button-shadow: rgba(204, 204, 204, 0.27);
-      --button-hover-shadow: rgba(204, 204, 204, 0.7);
-    }
+  [data-theme="dark"] {
+    --text-color: #cfcfcf;
+    --background: #161616;
+    --hover-text: #ffffff;
+    --button-shadow: rgba(204, 204, 204, 0.27);
+    --button-hover-shadow: rgba(204, 204, 204, 0.7);
   }
 
   html {

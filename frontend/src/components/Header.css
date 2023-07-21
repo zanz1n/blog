@@ -21,8 +21,22 @@ a {
   gap: 1.2rem;
 }
 
+.left svg {
+  width: 52px;
+  height: 52px;
+}
+
+.left svg path {
+  fill: var(--text-color);
+}
+
 .right {
   gap: 2.8rem;
+}
+
+.right img {
+  width: 24px;
+  height: 24px;
 }
 
 nav {
@@ -53,6 +67,15 @@ nav a {
 
 nav a:hover {
   color: var(--hover-text);
+}
+
+.themeBtn {
+  background: none;
+  border: none;
+}
+
+.themeBtn:hover {
+  cursor: pointer;
 }
 
 .loginBtn {
