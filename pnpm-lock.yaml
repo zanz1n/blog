@@ -32,6 +32,9 @@ importers:
       svelte:
         specifier: ^4.1.0
         version: 4.1.0
+      ts-results:
+        specifier: ^3.3.0
+        version: 3.3.0
     devDependencies:
       '@typescript-eslint/eslint-plugin':
         specifier: '*'
@@ -3759,6 +3762,10 @@ packages:
     dependencies:
       typescript: 5.1.6
     dev: true
+
+  /ts-results@3.3.0:
+    resolution: {integrity: sha512-FWqxGX2NHp5oCyaMd96o2y2uMQmSu8Dey6kvyuFdRJ2AzfmWo3kWa4UsPlCGlfQ/qu03m09ZZtppMoY8EMHuiA==}
+    dev: false
 
   /tsconfig-resolver@3.0.1:
     resolution: {integrity: sha512-ZHqlstlQF449v8glscGRXzL6l2dZvASPCdXJRWG4gHEZlUVx2Jtmr+a2zeVG4LCsKhDXKRj5R3h0C/98UcVAQg==}
