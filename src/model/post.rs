@@ -15,8 +15,8 @@ pub struct Model {
     #[sea_orm(column_name = "updatedAt")]
     #[serde(rename = "updatedAt")]
     pub updated_at: DateTime,
-    #[sea_orm(column_type = "String(Some(64))", unique, indexed)]
-    pub slug: String,
+    #[sea_orm(column_type = "String(Some(192))", unique, indexed)]
+    pub title: String,
     #[sea_orm(column_type = "Text")]
     pub content: String,
     #[sea_orm(column_name = "thumbImageKey", column_type = "String(Some(128))")]
@@ -40,7 +40,7 @@ pub struct PostWithUser {
     pub created_at: DateTime,
     #[serde(rename = "updatedAt")]
     pub updated_at: DateTime,
-    pub slug: String,
+    pub title: String,
     pub content: String,
     #[serde(rename = "thumbImage")]
     pub thumb_image: Option<String>,
@@ -53,7 +53,7 @@ impl PostWithUser {
             id: model.id,
             created_at: model.created_at,
             updated_at: model.updated_at,
-            slug: model.slug,
+            title: model.title,
             content: model.content,
             thumb_image: model.thumb_image,
             user,

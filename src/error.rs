@@ -47,8 +47,8 @@ pub enum ApiError {
     InvalidPostIdSize,
     #[error("Posts 'thumbImage' prop must be a nullable string up to 128 characters")]
     InvalidPostThumbIdSize,
-    #[error("Posts 'slug' prop must at least 12 and up to 128 characters")]
-    InvalidPostSlugSize,
+    #[error("Post title must at least 12 and up to 192 characters")]
+    InvalidPostTitleSize,
     #[error("Post payload contain invalid fields")]
     InvalidPostData,
 }
@@ -75,7 +75,7 @@ impl From<&ApiError> for usize {
             ApiError::PostNotFound => 4042,
             ApiError::InvalidPostIdSize => 4007,
             ApiError::InvalidPostThumbIdSize => 4008,
-            ApiError::InvalidPostSlugSize => 4009,
+            ApiError::InvalidPostTitleSize => 4009,
             ApiError::InvalidPostData => 40010,
             ApiError::UserUnderTokenInvalidation(r) => match r {
                 InvalidationReason::PasswordChanged => 40151,
@@ -110,7 +110,7 @@ impl ApiError {
             4042 => Ok(Self::PostNotFound),
             4007 => Ok(Self::InvalidPostIdSize),
             4008 => Ok(Self::InvalidPostThumbIdSize),
-            4009 => Ok(Self::InvalidPostSlugSize),
+            4009 => Ok(Self::InvalidPostTitleSize),
             40010 => Ok(Self::InvalidPostData),
             40151 => Ok(Self::UserUnderTokenInvalidation(
                 InvalidationReason::PasswordChanged,

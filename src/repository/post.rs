@@ -16,7 +16,7 @@ use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct CreatePostData {
-    slug: String,
+    title: String,
     content: String,
     #[serde(rename = "thumbImage")]
     thumb_image: Option<String>,
@@ -30,8 +30,8 @@ impl CreatePostData {
             }
         }
 
-        if self.slug.len() > 64 || self.slug.len() < 12 {
-            return Some(ApiError::InvalidPostSlugSize);
+        if self.title.len() > 192 || self.title.len() < 12 {
+            return Some(ApiError::InvalidPostTitleSize);
         }
 
         None
@@ -83,7 +83,7 @@ impl PostRepository for PostService {
 
         let post = ActiveModel {
             id: Set(random_post_id()),
-            slug: Set(data.slug),
+            title: Set(data.title),
             thumb_image: Set(data.thumb_image),
             content: Set(data.content),
             created_at: Set(now),

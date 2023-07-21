@@ -6,7 +6,7 @@ export interface JsonPost {
   id: string;
   createdAt: string;
   updatedAt: string;
-  slug: string;
+  title: string;
   content: string;
   thumbImage: string | null;
   userId: string | null;
@@ -30,7 +30,7 @@ export class Post {
     public id: string,
     public createdAt: Date,
     public updatedAt: Date,
-    public slug: string,
+    public title: string,
     public content: string,
     public thumbImage: string | null,
     public user?: User,
@@ -60,7 +60,7 @@ export class Post {
       json.id,
       new Date(json.createdAt),
       new Date(json.updatedAt),
-      json.slug,
+      json.title,
       json.content,
       json.thumbImage,
     );

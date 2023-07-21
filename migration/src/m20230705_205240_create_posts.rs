@@ -20,7 +20,7 @@ impl MigrationTrait for Migration {
                     )
                     .col(ColumnDef::new(Post::CreatedAt).timestamp().not_null())
                     .col(ColumnDef::new(Post::UpdatedAt).timestamp().not_null())
-                    .col(ColumnDef::new(Post::Slug).string_len(64).not_null())
+                    .col(ColumnDef::new(Post::Title).string_len(192).not_null())
                     .col(ColumnDef::new(Post::Content).text().not_null())
                     .col(ColumnDef::new(Post::ThumbImage).string_len(128).null())
                     .col(ColumnDef::new(Post::UserId).string_len(18).not_null())
@@ -41,7 +41,7 @@ impl MigrationTrait for Migration {
             .create_index(
                 Index::create()
                     .table(Post::Table)
-                    .col(Post::Slug)
+                    .col(Post::Title)
                     .to_owned(),
             )
             .await?;
@@ -75,8 +75,8 @@ enum Post {
     CreatedAt,
     #[iden = "updatedAt"]
     UpdatedAt,
-    #[iden = "slug"]
-    Slug,
+    #[iden = "title"]
+    Title,
     #[iden = "content"]
     Content,
     #[iden = "thumbImageKey"]
@@ -89,7 +89,7 @@ enum Post {
 // assert_eq!(Post::Id.to_string(), "id");
 // assert_eq!(Post::CreatedAt.to_string(), "createdAt");
 // assert_eq!(Post::UpdatedAt.to_string(), "updatedAt");
-// assert_eq!(Post::Slug.to_string(), "slug");
+// assert_eq!(Post::Title.to_string(), "title");
 // assert_eq!(Post::Content.to_string(), "content");
 // assert_eq!(Post::ThumbImage.to_string(), "thumbImageKey");
 // assert_eq!(Post::UserId.to_string(), "userId");
