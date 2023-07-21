@@ -1,8 +1,12 @@
 import { defineConfig } from "astro/config";
+import vercel from "@astrojs/vercel/edge";
 
 import svelte from "@astrojs/svelte";
 
-// https://astro.build/config
 export default defineConfig({
-  integrations: [svelte()]
+  integrations: [svelte()],
+  output: "server",
+  adapter: vercel({
+    analytics: true
+  })
 });
