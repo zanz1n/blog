@@ -1,5 +1,6 @@
 .container {
   height: 80px;
+  margin-bottom: 50px;
 }
 
 .left,
@@ -79,5 +80,9 @@ nav a:hover {
 
   .right {
     gap: 2.4rem;
+  }
+
+  .container {
+    margin-bottom: 30px;
   }
 }
