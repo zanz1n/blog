@@ -6,7 +6,5 @@ import svelte from "@astrojs/svelte";
 export default defineConfig({
   integrations: [svelte()],
   output: "server",
-  adapter: vercel({
-    analytics: true
-  })
+  adapter: vercel()
 });
