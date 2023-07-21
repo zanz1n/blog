@@ -49,6 +49,8 @@ pub enum ApiError {
     InvalidPostThumbIdSize,
     #[error("Posts 'slug' prop must at least 12 and up to 128 characters")]
     InvalidPostSlugSize,
+    #[error("Post payload contain invalid fields")]
+    InvalidPostData,
 }
 
 impl From<&ApiError> for usize {
@@ -74,6 +76,7 @@ impl From<&ApiError> for usize {
             ApiError::InvalidPostIdSize => 4007,
             ApiError::InvalidPostThumbIdSize => 4008,
             ApiError::InvalidPostSlugSize => 4009,
+            ApiError::InvalidPostData => 40010,
             ApiError::UserUnderTokenInvalidation(r) => match r {
                 InvalidationReason::PasswordChanged => 40151,
                 InvalidationReason::PermissionChanged => 40152,
@@ -108,6 +111,7 @@ impl ApiError {
             4007 => Ok(Self::InvalidPostIdSize),
             4008 => Ok(Self::InvalidPostThumbIdSize),
             4009 => Ok(Self::InvalidPostSlugSize),
+            40010 => Ok(Self::InvalidPostData),
             40151 => Ok(Self::UserUnderTokenInvalidation(
                 InvalidationReason::PasswordChanged,
             )),
