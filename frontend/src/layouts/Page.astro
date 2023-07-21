@@ -1,10 +1,20 @@
 ---
+import "../lib/fonts.css";
 import Header from "../components/Header.astro";
 
 interface Props {
   title: string;
   description: string;
 }
+
+const fontPreload = [
+  "https://fonts.gstatic.com/s/lato/v24/S6u9w4BMUTPHh7USSwaPGR_p.woff2",
+  "https://fonts.gstatic.com/s/lato/v24/S6u9w4BMUTPHh7USSwiPGQ.woff2",
+  "https://fonts.gstatic.com/s/lato/v24/S6uyw4BMUTPHjxAwXjeu.woff2",
+  "https://fonts.gstatic.com/s/lato/v24/S6uyw4BMUTPHjx4wXg.woff2",
+  "https://fonts.gstatic.com/s/lato/v24/S6u9w4BMUTPHh6UVSwaPGR_p.woff2",
+  "https://fonts.gstatic.com/s/lato/v24/S6u9w4BMUTPHh6UVSwiPGQ.woff2",
+];
 
 const { title, description } = Astro.props;
 ---
@@ -17,12 +27,19 @@ const { title, description } = Astro.props;
     <meta name="viewport" content="width=device-width" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="generator" content={Astro.generator} />
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link
-      href="https://fonts.googleapis.com/css2?family=Lato:wght@300;400;700&display=swap"
-      rel="stylesheet"
-    />
+    {
+      fontPreload.map((href) => {
+        return (
+          <link
+            rel="preload"
+            href={href}
+            crossorigin="anonymous"
+            as="font"
+            type="font/woff2"
+          />
+        );
+      })
+    }
     <title>{title}</title>
   </head>
   <body>
@@ -52,6 +69,7 @@ const { title, description } = Astro.props;
 
   html {
     font-family: "Lato", sans-serif;
+    font-display: block;
     background-color: var(--background);
     color: var(--text-color);
   }
