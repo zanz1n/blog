@@ -1,0 +1,143 @@
+---
+import config from "../../../config.json";
+import Layout from "../../layouts/Page.astro";
+import { Post } from "../../lib/Post";
+import { getCdnAddress } from "../../lib/utils";
+import { errorResponse } from "../../lib/errors";
+
+const { id } = Astro.params as { id: string };
+
+if (id.length != 24) {
+  return errorResponse(404);
+}
+
+const res = await fetch(config.apiUri + "/post/" + id, {
+  headers: {
+    "Content-Type": "application/json",
+  },
+}).catch((e) => null);
+
+if (!res) {
+  return errorResponse(500);
+} else if (!res.ok) {
+  return errorResponse(404);
+}
+
+const topics: string[] = [];
+
+const body = await res.json();
+
+const post = Post.fromObject(body.data).unwrap();
+---
+
+<Layout title={"Post | " + post.title} description="">
+  <div class="container">
+    <div class="articleContainer">
+      <h1 class="postTitle">{post.title}</h1>
+      <img
+        src={post.thumbImage
+          ? getCdnAddress(post.thumbImage)
+          : "/no-image.webp"}
+        alt={post.title + " (Post Image)"}
+      />
+      <article set:html={post.content} />
+    </div>
+    <aside>
+      <section class="topic">
+        <h2>{post.title}</h2>
+      </section>
+      <hr />
+      {
+        topics.map((t) => (
+          <section>
+            <h3>{t}</h3>
+          </section>
+        ))
+      }
+    </aside>
+  </div>
+</Layout>
+
+<style is:global>
+  article h2 {
+    margin-top: 2.4rem;
+    font-size: 2rem;
+  }
+
+  article h3 {
+    margin-top: 1.8rem;
+    font-size: 1.6rem;
+  }
+
+  article h4 {
+    margin-top: 1.4rem;
+    font-size: 1.2rem;
+  }
+
+  article * {
+    margin: 0.7rem 0;
+  }
+
+  article p {
+    font-size: 1.12rem;
+  }
+
+  article img {
+    width: 100%;
+  }
+</style>
+
+<style>
+  .container {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    margin: 24px auto;
+    max-width: 992px;
+    padding: 0 20px;
+  }
+
+  .articleContainer {
+    max-width: 600px;
+  }
+
+  .articleContainer img {
+    max-width: 100%;
+  }
+
+  aside {
+    text-align: right;
+    width: 220px;
+  }
+
+  .postTitle {
+    font-size: 2.5rem;
+    margin-bottom: 24px;
+  }
+
+  aside h2 {
+    margin-bottom: 12px;
+    font-size: 1.44rem;
+  }
+
+  @media screen and (max-width: 924px) {
+    .articleContainer {
+      max-width: 480px;
+    }
+  }
+
+  @media screen and (max-width: 758px) {
+    .container {
+      flex-direction: column;
+      gap: 32px;
+    }
+
+    .articleContainer {
+      max-width: 100%;
+    }
+
+    aside {
+      width: 100%;
+    }
+  }
+</style>
