@@ -122,6 +122,7 @@ async fn main() -> Result<(), Error> {
             .service(post::get_posts_recomendation)
             .service(post::get_user_posts)
             .service(post::create_post)
+            .service(post::get_post_headings)
     });
 
     if 0 < actix_workers {

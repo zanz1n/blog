@@ -3,7 +3,10 @@ use crate::{
     middlewares::auth::AuthorizedUser,
     model::post::{Model as PostModel, PostWithUser},
     repository::post::{CreatePostData, PostRepository},
-    utils::http::{CursorLimitQueryParams, DataBody, PathWithId},
+    utils::{
+        html::{self, HeadingNode},
+        http::{CursorLimitQueryParams, DataBody, PathWithId},
+    },
 };
 use actix_web::{
     get, post,
@@ -34,12 +37,26 @@ async fn get_posts_recomendation(
     Ok(DataBody::new(result, "Success"))
 }
 
+#[get("/post/{id}/headings")]
+async fn get_post_headings(
+    post_repo: Data<dyn PostRepository>,
+    params: Path<PathWithId<String>>,
+) -> Result<DataBody<Vec<HeadingNode>>, ApiError> {
+    let post = post_repo.get_by_id(params.id()).await?;
+
+    let headings = html::get_headings(post.content.as_str());
+
+    Ok(DataBody::new(headings, "Success"))
+}
+
 #[get("/post/{id}")]
 async fn get_post_by_id(
     post_repo: Data<dyn PostRepository>,
     params: Path<PathWithId<String>>,
 ) -> Result<PostWithUser, ApiError> {
-    post_repo.get_by_id(params.id()).await
+    let post = post_repo.get_by_id(params.id()).await?;
+
+    Ok(post)
 }
 
 #[get("/user/{id}/posts")]
