@@ -1,4 +1,5 @@
 // Copy this file to config.json
 {
-  "apiUri": "https://example.com/api"
+  "apiUri": "https://example.com/api",
+  "cdnUri": "https://cdn.example.com"
 }
