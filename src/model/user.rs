@@ -16,7 +16,7 @@ pub struct Model {
     pub email: String,
     #[sea_orm(column_type = "String(Some(42))")]
     pub username: String,
-    #[sea_orm(column_type = "String(Some(255))")]
+    #[sea_orm(column_type = "String(Some(60))")]
     pub password: String,
     pub role: UserRole,
 }
