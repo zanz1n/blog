@@ -11,7 +11,7 @@ if (id.length != 24) {
   return errorResponse(404);
 }
 
-const res = await fetch(config.apiUri + "/post/" + id, {
+let res = await fetch(config.apiUri + "/post/" + id, {
   headers: {
     "Content-Type": "application/json",
   },
@@ -23,11 +23,30 @@ if (!res) {
   return errorResponse(404);
 }
 
-const topics: string[] = [];
+interface Heading {
+  title: string;
+  kind: "h2" | "h3" | "h4" | "h5";
+}
 
-const body = await res.json();
+let body = await res.json();
 
 const post = Post.fromObject(body.data).unwrap();
+
+res = await fetch(config.apiUri + "/post/" + id + "/headings", {
+  headers: {
+    "Content-Type": "application/json",
+  },
+});
+
+if (!res) {
+  return errorResponse(500);
+} else if (!res.ok) {
+  return errorResponse(404);
+}
+
+body = await res.json();
+
+const headings: Heading[] = body.data;
 ---
 
 <Layout title={"Post | " + post.title} description="">
@@ -48,9 +67,9 @@ const post = Post.fromObject(body.data).unwrap();
       </section>
       <hr />
       {
-        topics.map((t) => (
-          <section>
-            <h3>{t}</h3>
+        headings.map((h) => (
+          <section class="topic">
+            <a class={"s" + h.kind}>{h.title}</a>
           </section>
         ))
       }
@@ -88,6 +107,19 @@ const post = Post.fromObject(body.data).unwrap();
 </style>
 
 <style>
+  .sh2 {
+    font-size: 1.5rem;
+  }
+  .sh3 {
+    font-size: 1.3rem;
+  }
+  .sh4 {
+    font-size: 1.1rem;
+  }
+  .sh5 {
+    font-size: 0.9rem;
+  }
+
   .container {
     display: flex;
     flex-direction: row;
@@ -105,9 +137,17 @@ const post = Post.fromObject(body.data).unwrap();
     max-width: 100%;
   }
 
+  .topic a:hover {
+    text-decoration: underline;
+    cursor: pointer;
+  }
+
   aside {
     text-align: right;
     width: 220px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
   }
 
   .postTitle {
