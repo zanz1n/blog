@@ -1,5 +1,5 @@
-const TO_DARK_HTML = "<img src=\"/moon.svg\">";
-const TO_LIGHT_HTML = "<img src=\"/sun.svg\">";
+const TO_DARK_HTML = "<img width=\"24px\" height=\"24px\" src=\"/moon.svg\">";
+const TO_LIGHT_HTML = "<img width=\"24px\" height=\"24px\" src=\"/sun.svg\">";
 
 function updateThemeVariant(target: "dark" | "light") {
   document.documentElement.setAttribute("data-theme", target);
