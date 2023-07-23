@@ -62,6 +62,15 @@ pub async fn hash_password(password: String) -> Result<String, ApiError> {
         })
 }
 
+#[inline]
+pub fn sanitize_post_description(s: String) -> String {
+    if s.len() > 256 {
+        s.split_at(250).0.to_string() + " [...]"
+    } else {
+        s
+    }
+}
+
 /// [`sanitize_posts`] handled in another thread with tokio blocking tasks
 pub async fn sanitize_posts_job(data: Vec<PostModel>) -> Result<Vec<PostModel>, ApiError> {
     tokio::task::spawn_blocking(|| sanitize_posts(data))
@@ -78,10 +87,7 @@ pub fn sanitize_posts(mut data: Vec<PostModel>) -> Vec<PostModel> {
     for post in data.iter_mut() {
         if post.content.len() > 256 {
             if let Some(s) = html::get_first_paragraph(post.content.as_str()) {
-                post.content = s;
-                if post.content.len() > 256 {
-                    post.content = post.content.split_at(250).0.to_string() + " [...]";
-                }
+                post.content = sanitize_post_description(s);
             }
         }
     }
