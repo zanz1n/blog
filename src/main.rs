@@ -123,6 +123,7 @@ async fn main() -> Result<(), Error> {
             .service(post::get_user_posts)
             .service(post::create_post)
             .service(post::get_post_headings)
+            .service(post::get_post_description)
     });
 
     if 0 < actix_workers {

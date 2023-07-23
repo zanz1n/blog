@@ -4,6 +4,7 @@ use crate::{
     model::post::{Model as PostModel, PostWithUser},
     repository::post::{CreatePostData, PostRepository},
     utils::{
+        db::sanitize_post_description,
         html::{self, HeadingNode},
         http::{CursorLimitQueryParams, DataBody, PathWithId},
     },
@@ -47,6 +48,24 @@ async fn get_post_headings(
     let headings = html::get_headings(post.content.as_str());
 
     Ok(DataBody::new(headings, "Success"))
+}
+
+#[get("/post/{id}/description")]
+async fn get_post_description(
+    post_repo: Data<dyn PostRepository>,
+    params: Path<PathWithId<String>>,
+) -> Result<DataBody<Option<String>>, ApiError> {
+    let content = post_repo.get_content(params.id()).await?;
+
+    let content = html::get_first_paragraph(content.as_str());
+
+    if let Some(mut content) = content {
+        content = sanitize_post_description(content);
+
+        Ok(DataBody::new(Some(content), "Success"))
+    } else {
+        Err(ApiError::FailedToGetPostDescription)
+    }
 }
 
 #[get("/post/{id}")]
