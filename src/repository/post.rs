@@ -5,7 +5,7 @@ use crate::{
         ActiveModel, Column as PostColumn, Entity as PostEntity, Model as PostModel, PostWithUser,
     },
     model::user::Entity as UserEntity,
-    utils::db::{random_post_id, sanitize_posts_job, timestamp_now, POST_ID_SIZE, USER_ID_SIZE},
+    utils::{db::{random_post_id, sanitize_posts_job, timestamp_now, POST_ID_SIZE, USER_ID_SIZE}, html},
 };
 use async_trait::async_trait;
 use sea_orm::{
@@ -42,6 +42,7 @@ impl CreatePostData {
 pub trait PostRepository: Sync + Send {
     async fn create(&self, user_id: String, data: CreatePostData) -> Result<PostModel, ApiError>;
     async fn get_by_id(&self, id: String) -> Result<PostWithUser, ApiError>;
+    async fn get_content(&self, id: String) -> Result<String, ApiError>;
     async fn get_user_posts(
         &self,
         id: String,
@@ -227,5 +228,26 @@ impl PostRepository for PostService {
         }
 
         Ok(result)
+    }
+
+    async fn get_content(&self, id: String) -> Result<String, ApiError> {
+        let result = PostEntity::find_by_id(id)
+            .column(PostColumn::Content)
+            .one(self.db)
+            .await
+            .or_else(|e| {
+                Err(match e {
+                    DbErr::RecordNotFound(_) => ApiError::PostNotFound,
+                    _ => ApiError::InternalServerError,
+                })
+            })?;
+
+        if let Some(result) = result {
+            println!("{:?}", result);
+
+            Ok(result.content)
+        } else {
+            Err(ApiError::PostNotFound)
+        }
     }
 }
