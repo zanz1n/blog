@@ -5,7 +5,7 @@ use crate::{
         ActiveModel, Column as PostColumn, Entity as PostEntity, Model as PostModel, PostWithUser,
     },
     model::user::Entity as UserEntity,
-    utils::{db::{random_post_id, sanitize_posts_job, timestamp_now, POST_ID_SIZE, USER_ID_SIZE}, html},
+    utils::db::{random_post_id, sanitize_posts_job, timestamp_now, POST_ID_SIZE, USER_ID_SIZE},
 };
 use async_trait::async_trait;
 use sea_orm::{
@@ -242,12 +242,9 @@ impl PostRepository for PostService {
                 })
             })?;
 
-        if let Some(result) = result {
-            println!("{:?}", result);
-
-            Ok(result.content)
-        } else {
-            Err(ApiError::PostNotFound)
+        match result {
+            Some(v) => Ok(v.content),
+            None => Err(ApiError::PostNotFound),
         }
     }
 }
