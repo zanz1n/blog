@@ -51,6 +51,8 @@ pub enum ApiError {
     InvalidPostTitleSize,
     #[error("Post payload contain invalid fields")]
     InvalidPostData,
+    #[error("Failed to get post description from it's content")]
+    FailedToGetPostDescription,
 }
 
 impl From<&ApiError> for usize {
@@ -77,6 +79,7 @@ impl From<&ApiError> for usize {
             ApiError::InvalidPostThumbIdSize => 4008,
             ApiError::InvalidPostTitleSize => 4009,
             ApiError::InvalidPostData => 40010,
+            ApiError::FailedToGetPostDescription => 4043,
             ApiError::UserUnderTokenInvalidation(r) => match r {
                 InvalidationReason::PasswordChanged => 40151,
                 InvalidationReason::PermissionChanged => 40152,
@@ -112,6 +115,7 @@ impl ApiError {
             4008 => Ok(Self::InvalidPostThumbIdSize),
             4009 => Ok(Self::InvalidPostTitleSize),
             40010 => Ok(Self::InvalidPostData),
+            4043 => Ok(Self::FailedToGetPostDescription),
             40151 => Ok(Self::UserUnderTokenInvalidation(
                 InvalidationReason::PasswordChanged,
             )),

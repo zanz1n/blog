@@ -20,6 +20,7 @@ export enum ApiError {
   InvalidPostThumbIdSize = 4008,
   InvalidPostSlugSize = 4009,
   InvalidPostData = 40010,
+  FailedToGetPostDescription = 4043,
   UserUnderTokenInvalidationPasswordChanged = 40151,
   UserUnderTokenInvalidationPermissionChanged = 40152,
   UserUnderTokenInvalidationTooManyAuthFailures = 40153,
