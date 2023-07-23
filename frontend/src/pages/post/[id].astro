@@ -5,51 +5,56 @@ import { Post } from "../../lib/Post";
 import { getCdnAddress } from "../../lib/utils";
 import { errorResponse } from "../../lib/errors";
 
+interface Heading {
+  title: string;
+  kind: "h2" | "h3" | "h4" | "h5";
+}
+
 const { id } = Astro.params as { id: string };
 
 if (id.length != 24) {
   return errorResponse(404);
 }
 
-let res = await fetch(config.apiUri + "/post/" + id, {
-  headers: {
-    "Content-Type": "application/json",
-  },
-}).catch((e) => null);
+const headers = {
+  Accept: "application/json",
+};
 
-if (!res) {
+const [postRes, headingsRes, descriptionRes] = await Promise.all([
+  fetch(config.apiUri + "/post/" + id, { headers }).catch((e) => null),
+  fetch(config.apiUri + "/post/" + id + "/headings", { headers }).catch(
+    (e) => null
+  ),
+  fetch(config.apiUri + "/post/" + id + "/description", { headers }).catch(
+    (e) => null
+  ),
+]);
+
+if (!postRes || !headingsRes || !descriptionRes) {
   return errorResponse(500);
-} else if (!res.ok) {
+} else if (!postRes.ok || !headingsRes.ok) {
   return errorResponse(404);
 }
 
-interface Heading {
-  title: string;
-  kind: "h2" | "h3" | "h4" | "h5";
-}
+const [postBody, headingsBody, descriptionBody] = await Promise.all([
+  postRes.json(),
+  headingsRes.json(),
+  descriptionRes.json(),
+]);
 
-let body = await res.json();
+const post = Post.fromObject(postBody.data).unwrap();
 
-const post = Post.fromObject(body.data).unwrap();
-
-res = await fetch(config.apiUri + "/post/" + id + "/headings", {
-  headers: {
-    "Content-Type": "application/json",
-  },
-});
-
-if (!res) {
-  return errorResponse(500);
-} else if (!res.ok) {
+if (!post.isComplete()) {
   return errorResponse(404);
 }
 
-body = await res.json();
+const headings: Heading[] = headingsBody.data;
 
-const headings: Heading[] = body.data;
+const description =
+  "data" in descriptionBody ? (descriptionBody.data as string) : "";
 ---
 
-<Layout title={"Post | " + post.title} description="">
+<Layout title={"Post | " + post.title} description={description}>
   <div class="container">
     <div class="articleContainer">
       <h1 class="postTitle">{post.title}</h1>
