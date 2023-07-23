@@ -5,7 +5,7 @@ use crate::{
         ActiveModel, Column as PostColumn, Entity as PostEntity, Model as PostModel, PostWithUser,
     },
     model::user::Entity as UserEntity,
-    utils::db::{random_post_id, timestamp_now, POST_ID_SIZE, USER_ID_SIZE},
+    utils::db::{random_post_id, sanitize_posts_job, timestamp_now, POST_ID_SIZE, USER_ID_SIZE},
 };
 use async_trait::async_trait;
 use sea_orm::{
@@ -166,6 +166,8 @@ impl PostRepository for PostService {
                 }
             })?;
 
+        let result = sanitize_posts_job(result).await?;
+
         Ok(result)
     }
 
@@ -182,7 +184,7 @@ impl PostRepository for PostService {
                 Err(ApiError::InternalServerError)
             })?
         } else {
-            let mut result = PostEntity::find()
+            let result = PostEntity::find()
                 .order_by_desc(PostColumn::CreatedAt)
                 .limit(256)
                 .all(self.db)
@@ -195,11 +197,7 @@ impl PostRepository for PostService {
                     }
                 })?;
 
-            for i in result.iter_mut() {
-                if i.content.len() > 256 {
-                    i.content = i.content.split_at(250).0.to_string() + " [...]";
-                }
-            }
+            let result = sanitize_posts_job(result).await?;
 
             match serde_json::to_string(&result) {
                 Ok(v) => {
