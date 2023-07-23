@@ -1,4 +1,5 @@
-use crate::error::ApiError;
+use super::html;
+use crate::{error::ApiError, model::post::Model as PostModel};
 use sea_orm::{prelude::DateTime, DbErr};
 use std::time::{SystemTime, UNIX_EPOCH};
 use tokio::task::spawn_blocking;
@@ -59,4 +60,31 @@ pub async fn hash_password(password: String) -> Result<String, ApiError> {
             log::error!(target: "bcrypt_error", "{}", e);
             Err(ApiError::InternalServerError)
         })
+}
+
+/// [`sanitize_posts`] handled in another thread with tokio blocking tasks
+pub async fn sanitize_posts_job(data: Vec<PostModel>) -> Result<Vec<PostModel>, ApiError> {
+    tokio::task::spawn_blocking(|| sanitize_posts(data))
+        .await
+        .or_else(|e| {
+            log::error!(target: "tokio_runtime_error", "{}", e);
+            Err(ApiError::InternalServerError)
+        })
+}
+
+/// Parses the post content html and extracts the description from the first
+/// paragraph
+pub fn sanitize_posts(mut data: Vec<PostModel>) -> Vec<PostModel> {
+    for post in data.iter_mut() {
+        if post.content.len() > 256 {
+            if let Some(s) = html::get_first_paragraph(post.content.as_str()) {
+                post.content = s;
+                if post.content.len() > 256 {
+                    post.content = post.content.split_at(250).0.to_string() + " [...]";
+                }
+            }
+        }
+    }
+
+    data
 }

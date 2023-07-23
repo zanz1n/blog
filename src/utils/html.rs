@@ -69,3 +69,27 @@ pub fn get_headings(s: &str) -> Vec<HeadingNode> {
 
     headings
 }
+
+pub fn get_first_paragraph(s: &str) -> Option<String> {
+    let dom = Html::parse_fragment(s);
+
+    let mut before_was_p = false;
+
+    for ele in dom.tree {
+        match ele {
+            Node::Element(tag) => {
+                if tag.name() == "p" {
+                    before_was_p = true
+                }
+            }
+            Node::Text(s) => {
+                if before_was_p {
+                    return Some(s.to_string());
+                }
+            }
+            _ => before_was_p = false,
+        }
+    }
+
+    None
+}
