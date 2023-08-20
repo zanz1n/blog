@@ -43,3 +43,5 @@ features = ["derive"]
 
 [profile.release]
 panic = 'abort'
+lto = true
+codegen-units = 1
