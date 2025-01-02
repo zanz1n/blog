@@ -1,6 +1,0 @@
-*.sql.go
-batch.go
-db.go
-models.go
-querier.go
-copyfrom.go

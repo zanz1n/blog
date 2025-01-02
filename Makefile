@@ -54,9 +54,6 @@ endif
 generate:
 	@echo "$(IDEN1) Codegen:"
 
-	sqlc generate
-	@echo "$(IDEN2) Generated SQL interfaces"
-
 	templ generate
 	@echo "$(IDEN2) Generated templ components"
 
@@ -64,9 +61,6 @@ generate:
 
 deps:
 	@echo "$(IDEN1) Download binaries:"
-
-	$(GOBIN) install github.com/sqlc-dev/sqlc/cmd/sqlc@latest
-	@echo "$(IDEN2) Downloaded sqlc"
 
 	$(GOBIN) install github.com/a-h/templ/cmd/templ@latest
 	@echo "$(IDEN2) Downloaded templ"
