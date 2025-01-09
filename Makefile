@@ -1,3 +1,5 @@
+include .env
+
 SHELL := /bin/bash
 MAKEFLAGS += --no-print-directory
 
@@ -11,6 +13,7 @@ HOST_ARCH != $(GOBIN) env GOARCH
 
 VERSION != git rev-parse HEAD | head -c8
 
+CGO_ENABLED=1
 GOOS = $(HOST_OS)
 GOARCH = $(HOST_ARCH)
 
@@ -24,7 +27,7 @@ run: override GOOS = $(HOST_OS)
 run: override GOARCH = $(HOST_ARCH)
 run: build-dev
 	@echo "$(IDEN1) Running app:"
-	@./bin/blog_$(GOOS)_$(GOARCH)_debug
+	@./bin/blog_$(GOOS)_$(GOARCH)_debug --migrate
 
 build: OUT ?= bin/blog_$(GOOS)_$(GOARCH)
 build: BTAG = Build
