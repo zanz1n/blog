@@ -105,7 +105,7 @@ func (s Snowflake) String() string {
 
 // Value implements driver.Valuer.
 func (s Snowflake) Value() (driver.Value, error) {
-	return s.String(), nil
+	return int64(s), nil
 }
 
 func snowflakeScanErr(src any) error {
