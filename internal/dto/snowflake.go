@@ -28,15 +28,16 @@ var (
 type Snowflake uint64
 
 func NewSnowflake() Snowflake {
-	timestamp := time.Now().UnixMilli()
-	rand := rand.Uint32() & SnowflakeRandMask
-
-	return NewSnowflakeWith(timestamp, rand)
+	return NewSnowflakeTime(time.Now())
 }
 
-func NewSnowflakeWith(timestamp int64, rand uint32) Snowflake {
-	s := Snowflake(timestamp-SnowflakeEpoch) << 22
-	s = s & Snowflake(rand&SnowflakeRandMask)
+func NewSnowflakeTime(t time.Time) Snowflake {
+	return NewSnowflakeWith(t, rand.Uint32())
+}
+
+func NewSnowflakeWith(t time.Time, rand uint32) Snowflake {
+	s := Snowflake(t.UnixMilli()-SnowflakeEpoch) << 22
+	s |= Snowflake(rand) & SnowflakeRandMask
 	return s
 }
 
