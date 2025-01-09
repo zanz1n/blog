@@ -4,14 +4,16 @@ SELECT 'up SQL query';
 
 CREATE TABLE users(
     id integer PRIMARY KEY,
-    created_at text NOT NULL,
-    updated_at text NOT NULL,
+    created_at integer NOT NULL,
+    updated_at integer NOT NULL,
     permission integer NOT NULL,
     email text NOT NULL,
     nickname text NOT NULL,
     name text,
     password blob NOT NULL
 ) STRICT;
+
+CREATE UNIQUE INDEX users_email_idx ON users(email);
 -- +goose StatementEnd
 
 -- +goose Down
