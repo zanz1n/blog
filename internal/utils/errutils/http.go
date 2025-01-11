@@ -34,6 +34,7 @@ func (e *httpStatus) Transparent() bool {
 func NewHttp(err error, status int16, code int32, transparent ...bool) HttpError {
 	if err == nil {
 		err = errors.New("Unknown error")
+		transparent = []bool{true}
 	}
 
 	e := &httpStatus{
