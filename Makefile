@@ -17,7 +17,7 @@ CGO_ENABLED=1
 GOOS = $(HOST_OS)
 GOARCH = $(HOST_ARCH)
 
-CFLAGS = -X github.com/zanz1n/blog/config.Version=$(VERSION) -X github.com/zanz1n/blog/config.Name=blog
+LDFLAGS = -X github.com/zanz1n/blog/config.Version=$(VERSION) -X github.com/zanz1n/blog/config.Name=blog
 
 .PHONY: default
 
@@ -31,16 +31,16 @@ run: build-dev
 
 build: OUT ?= bin/blog_$(GOOS)_$(GOARCH)
 build: BTAG = Build
-build: ALL_CFLAGS = -s -w $(CFLAGS)
+build: ALL_LDFLAGS = -s -w $(LDFLAGS)
 
 build-dev: OUT ?= bin/blog_$(GOOS)_$(GOARCH)_debug
 build-dev: BTAG = Build dev
-build-dev: ALL_CFLAGS = $(CFLAGS)
+build-dev: ALL_LDFLAGS = $(LDFLAGS)
 
 build build-dev: check
 	@echo "$(IDEN1) $(BTAG):"
 	@echo "$(IDEN2) OS: $(GOOS) ARCH: $(GOARCH)"
-	$(GOBIN) build -v -ldflags "$(ALL_CFLAGS)" -o $(OUT) .
+	$(GOBIN) build -v -ldflags "$(ALL_LDFLAGS)" -o $(OUT) .
 	@echo "$(IDEN1) $(BTAG): completed"
 
 check: deps generate test
