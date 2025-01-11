@@ -1,33 +1,17 @@
 package repository
 
 import (
+	"context"
 	"io"
+	"log/slog"
 	"sync"
-	"sync/atomic"
+	"time"
 
 	"github.com/jmoiron/sqlx"
+	"github.com/zanz1n/blog/internal/utils"
 )
 
-const userCreateQuery = `INSERT INTO users (
-    id,
-    created_at,
-    updated_at,
-    permission,
-    email,
-    nickname,
-    name,
-    password
-)
-VALUES (
-	:id,
-	:created_at,
-	:updated_at,
-	:permission,
-	:email,
-	:nickname,
-	:name,
-	:password
-);`
+const userCreateQuery = `INSERT INTO users VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`
 
 const userGetByIdQuery = `SELECT * FROM users WHERE id = $1`
 
@@ -40,88 +24,64 @@ const userDeleteByIdQuery = `DELETE FROM users WHERE id = $1 RETURNING *`
 type userQueries struct {
 	db *sqlx.DB
 
-	create     atomic.Pointer[sqlx.NamedStmt]
-	getById    atomic.Pointer[sqlx.Stmt]
-	getByEmail atomic.Pointer[sqlx.Stmt]
-	updateName atomic.Pointer[sqlx.Stmt]
-	deleteById atomic.Pointer[sqlx.Stmt]
+	Create     utils.Lazy[sqlx.Stmt]
+	GetById    utils.Lazy[sqlx.Stmt]
+	GetByEmail utils.Lazy[sqlx.Stmt]
+	UpdateName utils.Lazy[sqlx.Stmt]
+	DeleteById utils.Lazy[sqlx.Stmt]
 
 	closers   []io.Closer
 	closersMu sync.Mutex
 }
 
 func newUserQueries(db *sqlx.DB) *userQueries {
-	return &userQueries{
+	q := &userQueries{
 		db:        db,
 		closers:   make([]io.Closer, 0, 5),
 		closersMu: sync.Mutex{},
 	}
+
+	q.Create = utils.NewLazy(q.prepare(userCreateQuery, "Create"))
+	q.GetById = utils.NewLazy(q.prepare(userGetByIdQuery, "GetById"))
+	q.GetByEmail = utils.NewLazy(q.prepare(userGetByEmailQuery, "GetByEmail"))
+	q.UpdateName = utils.NewLazy(q.prepare(userUpdateNameQuery, "UpdateName"))
+	q.DeleteById = utils.NewLazy(q.prepare(userDeleteByIdQuery, "DeleteById"))
+
+	return q
 }
 
-func (q *userQueries) Create() (*sqlx.NamedStmt, error) {
-	if q.create.Load() == nil {
-		create, err := q.db.PrepareNamed(userCreateQuery)
+func (q *userQueries) prepare(query string, name string) func() (*sqlx.Stmt, error) {
+	return func() (*sqlx.Stmt, error) {
+		start := time.Now()
+
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+
+		sttm, err := q.db.PreparexContext(ctx, query)
 		if err != nil {
+			slog.Error(
+				"UserQueries: Failed to prepare query",
+				"name", name,
+				utils.TookAttr(start, 10*time.Microsecond),
+				"error", err,
+			)
 			return nil, err
 		}
-		q.create.Store(create)
-		q.append(create)
+
+		slog.Info(
+			"UserQueries: Prepared query",
+			"name", name,
+			utils.TookAttr(start, 10*time.Microsecond),
+		)
+
+		q.appendCloser(sttm)
+		return sttm, nil
 	}
-	return q.create.Load(), nil
 }
 
-func (q *userQueries) GetById() (*sqlx.Stmt, error) {
-	if q.getById.Load() == nil {
-		getById, err := q.db.Preparex(userGetByIdQuery)
-		if err != nil {
-			return nil, err
-		}
-		q.getById.Store(getById)
-		q.append(getById)
-	}
-	return q.getById.Load(), nil
-}
-
-func (q *userQueries) GetByEmail() (*sqlx.Stmt, error) {
-	if q.getByEmail.Load() == nil {
-		getByEmail, err := q.db.Preparex(userGetByEmailQuery)
-		if err != nil {
-			return nil, err
-		}
-		q.getByEmail.Store(getByEmail)
-		q.append(getByEmail)
-	}
-	return q.getByEmail.Load(), nil
-}
-
-func (q *userQueries) UpdateName() (*sqlx.Stmt, error) {
-	if q.updateName.Load() == nil {
-		updateName, err := q.db.Preparex(userUpdateNameQuery)
-		if err != nil {
-			return nil, err
-		}
-		q.updateName.Store(updateName)
-		q.append(updateName)
-	}
-	return q.updateName.Load(), nil
-}
-
-func (q *userQueries) DeleteById() (*sqlx.Stmt, error) {
-	if q.deleteById.Load() == nil {
-		deleteById, err := q.db.Preparex(userDeleteByIdQuery)
-		if err != nil {
-			return nil, err
-		}
-		q.deleteById.Store(deleteById)
-		q.append(deleteById)
-	}
-	return q.deleteById.Load(), nil
-}
-
-func (q *userQueries) append(c io.Closer) {
+func (q *userQueries) appendCloser(c io.Closer) {
 	q.closersMu.Lock()
 	defer q.closersMu.Unlock()
-
 	q.closers = append(q.closers, c)
 }
 
@@ -130,8 +90,8 @@ func (q *userQueries) Close() error {
 	defer q.closersMu.Unlock()
 
 	var lastErr error
-	for _, q := range q.closers {
-		if err := q.Close(); err != nil {
+	for _, c := range q.closers {
+		if err := c.Close(); err != nil {
 			lastErr = err
 		}
 	}
