@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/stretchr/testify/require"
+	assert "github.com/stretchr/testify/require"
 	"github.com/zanz1n/blog/internal/dto"
 	"github.com/zanz1n/blog/internal/repository"
 	"golang.org/x/crypto/bcrypt"
@@ -14,41 +14,69 @@ import (
 
 const issuer = "SRV"
 
-func authRepository(assert *require.Assertions) *repository.AuthRepository {
+func authRepository(t *testing.T) *repository.AuthRepository {
 	pub, priv, err := ed25519.GenerateKey(rand.Reader)
-	assert.NoError(err)
+	assert.NoError(t, err)
 
 	return repository.NewAuthRepository(priv, pub, issuer)
 }
 
-func newUser(assert *require.Assertions) dto.User {
+func newUser(t *testing.T) dto.User {
 	user, err := dto.NewUser(userData(), dto.PermissionDefault, bcrypt.MinCost)
-	assert.NoError(err)
+	assert.NoError(t, err)
 
 	return user
 }
 
-func TestJwtEncodeDecode(t *testing.T) {
-	assert := require.New(t)
-	repo := authRepository(assert)
+func TestJwt(t *testing.T) {
+	t.Parallel()
+	repo := authRepository(t)
 
-	user := newUser(assert)
-	data := dto.NewAuthToken(&user, issuer, time.Hour)
+	user := newUser(t)
+	data := dto.NewAuthToken(&user, issuer, time.Second)
 
 	token, err := repo.EncodeToken(data)
-	assert.NoError(err)
+	assert.NoError(t, err)
 
-	data2, err := repo.DecodeToken(token)
-	assert.NoError(err)
+	t.Run("Decode", func(t *testing.T) {
+		// t.Parallel()
+		data2, err := repo.DecodeToken(token)
+		assert.NoError(t, err)
 
-	assert.Equal(data, data2)
+		assert.Equal(t, data, data2)
+	})
+
+	t.Run("DecodeExpired", func(t *testing.T) {
+		// t.Parallel()
+		time.Sleep(2 * time.Second)
+
+		_, err = repo.DecodeToken(token)
+		assert.Error(t, err)
+		assert.ErrorIs(t, err, repository.ErrExpiredAuthToken)
+	})
+
+	t.Run("DecodeWrongKey", func(t *testing.T) {
+		// t.Parallel()
+		repo2 := authRepository(t)
+		_, err = repo2.DecodeToken(token)
+		assert.Error(t, err)
+		assert.ErrorIs(t, err, repository.ErrInvalidAuthToken)
+	})
+
+	t.Run("DecodeRandom", func(t *testing.T) {
+		// t.Parallel()
+		_, err = repo.DecodeToken("BLABLABLA")
+		assert.Error(t, err)
+		assert.ErrorIs(t, err, repository.ErrInvalidAuthToken)
+	})
 }
 
-func TestJwtIssuerSet(t *testing.T) {
-	assert := require.New(t)
-	repo := authRepository(assert)
+func TestJwtIssuer(t *testing.T) {
+	t.Parallel()
+	assert := assert.New(t)
+	repo := authRepository(t)
 
-	user := newUser(assert)
+	user := newUser(t)
 	data := dto.NewAuthToken(&user, "", time.Hour)
 
 	token, err := repo.EncodeToken(data)
@@ -59,44 +87,4 @@ func TestJwtIssuerSet(t *testing.T) {
 
 	data.Issuer = issuer
 	assert.Equal(data, data2)
-}
-
-func TestJwtExpiration(t *testing.T) {
-	assert := require.New(t)
-	repo := authRepository(assert)
-
-	user := newUser(assert)
-	data := dto.NewAuthToken(&user, issuer, time.Second)
-
-	token, err := repo.EncodeToken(data)
-	assert.NoError(err)
-
-	_, err = repo.DecodeToken(token)
-	assert.NoError(err)
-
-	time.Sleep(2 * time.Second)
-
-	_, err = repo.DecodeToken(token)
-	assert.Error(err)
-	assert.ErrorIs(err, repository.ErrExpiredAuthToken)
-}
-
-func TestJwtParseInvalid(t *testing.T) {
-	assert := require.New(t)
-	repo1 := authRepository(assert)
-	repo2 := authRepository(assert)
-
-	user := newUser(assert)
-	data := dto.NewAuthToken(&user, "", time.Hour)
-
-	token, err := repo1.EncodeToken(data)
-	assert.NoError(err)
-
-	_, err = repo2.DecodeToken(token)
-	assert.Error(err)
-	assert.ErrorIs(err, repository.ErrInvalidAuthToken)
-
-	_, err = repo2.DecodeToken("BLABLABLA")
-	assert.Error(err)
-	assert.ErrorIs(err, repository.ErrInvalidAuthToken)
 }
