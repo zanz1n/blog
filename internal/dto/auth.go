@@ -1,6 +1,8 @@
 package dto
 
 import (
+	"fmt"
+	"strconv"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
@@ -23,7 +25,14 @@ const (
 	PermissionModerator = PermissionDefault | PermissionModerateAllComments
 )
 
+var _ fmt.Stringer = PermissionDefault
+
 type Permission int
+
+// String implements fmt.Stringer.
+func (p Permission) String() string {
+	return strconv.Itoa(int(p))
+}
 
 var _ jwt.Claims = &AuthToken{}
 
