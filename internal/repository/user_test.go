@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"io"
 	"log"
-	"log/slog"
 	"math/rand/v2"
 	"sync"
 	"testing"
@@ -23,13 +22,6 @@ import (
 )
 
 var onceGoose sync.Once
-
-func init() {
-	slog.SetDefault(slog.New(slog.NewTextHandler(log.Writer(), &slog.HandlerOptions{
-		AddSource: false,
-		Level:     slog.LevelInfo,
-	})))
-}
 
 func inMemoryUserRepo(t *testing.T) *repository.UserRepository {
 	db, err := sqlx.Open("sqlite3", "file::memory:")
