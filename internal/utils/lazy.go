@@ -22,8 +22,9 @@ func (l *Lazy[T]) Get() (*T, error) {
 	// A similar approach is taken in the `sync.Once` Get() method
 	if p := l.ptr.Load(); p == nil {
 		return l.getSlow()
+	} else {
+		return p, nil
 	}
-	return l.getSlow()
 }
 
 func (l *Lazy[T]) getSlow() (*T, error) {
