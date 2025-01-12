@@ -18,6 +18,15 @@ GOOS = $(HOST_OS)
 GOARCH = $(HOST_ARCH)
 
 LDFLAGS = -X github.com/zanz1n/blog/config.Version=$(VERSION) -X github.com/zanz1n/blog/config.Name=blog
+TESTFLAGS = -v -race
+
+ifeq ($(SHORTTESTS), 1)
+TESTFLAGS += -short
+endif
+
+ifeq ($(NOTESTCACHE), 1)
+TESTFLAGS += -count=1
+endif
 
 .PHONY: default
 
@@ -27,7 +36,7 @@ run: override GOOS = $(HOST_OS)
 run: override GOARCH = $(HOST_ARCH)
 run: build-dev
 	@echo "$(IDEN1) Running app:"
-	@./bin/blog_$(GOOS)_$(GOARCH)_debug --migrate
+	@./bin/blog_$(GOOS)_$(GOARCH)_debug -migrate
 
 build: OUT ?= bin/blog_$(GOOS)_$(GOARCH)
 build: BTAG = Build
@@ -48,7 +57,7 @@ check: deps generate test
 test:
 	@echo "$(IDEN1) Test:"
 ifneq ($(SKIPTESTS), 1)
-	$(GOBIN) test ./... -v --race
+	$(GOBIN) test ./... $(TESTFLAGS)
 	@echo "$(IDEN1) Test: completed"
 else
 	@echo "$(IDEN1) Test: skipped"
