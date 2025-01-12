@@ -3,60 +3,22 @@ package repository_test
 import (
 	"context"
 	"fmt"
-	"io"
-	"log"
-	"math/rand/v2"
-	"sync"
 	"testing"
 	"time"
 
-	_ "github.com/jackc/pgx/v5/stdlib"
-	"github.com/jmoiron/sqlx"
-	_ "github.com/mattn/go-sqlite3"
-	"github.com/pressly/goose/v3"
 	assert "github.com/stretchr/testify/require"
 	"github.com/zanz1n/blog/internal/dto"
 	"github.com/zanz1n/blog/internal/repository"
-	"github.com/zanz1n/blog/migrations"
 	"golang.org/x/crypto/bcrypt"
 )
 
-var onceGoose sync.Once
-
-func inMemoryUserRepo(t *testing.T) *repository.UserRepository {
-	db, err := sqlx.Open("sqlite3", "file::memory:")
-	assert.NoError(t, err)
+func userRepo(t *testing.T) *repository.UserRepository {
+	db := GetDb(t)
 
 	userRepo, err := repository.NewUserRepository(db)
 	assert.NoError(t, err)
 
-	onceGoose.Do(func() {
-		err = goose.SetDialect("sqlite3")
-		assert.NoError(t, err)
-
-		goose.SetBaseFS(migrations.EmbedMigrations)
-		goose.SetLogger(log.New(io.Discard, "", log.Flags()))
-	})
-
-	err = goose.Up(db.DB, "sqlite")
-	assert.NoError(t, err)
-
-	t.Cleanup(func() {
-		userRepo.Close()
-		db.Close()
-	})
-
 	return userRepo
-}
-
-var letterRunes = []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
-
-func randString(n int) string {
-	b := make([]rune, n)
-	for i := range b {
-		b[i] = letterRunes[rand.IntN(len(letterRunes))]
-	}
-	return string(b)
 }
 
 func userData() dto.UserCreateData {
@@ -70,7 +32,7 @@ func userData() dto.UserCreateData {
 
 func TestUserCreate(t *testing.T) {
 	t.Parallel()
-	repo := inMemoryUserRepo(t)
+	repo := userRepo(t)
 
 	t.Run("Inexistent", func(t *testing.T) {
 		// t.Parallel()
@@ -106,7 +68,7 @@ func TestUserCreate(t *testing.T) {
 
 func TestUserUpdateName(t *testing.T) {
 	t.Parallel()
-	repo := inMemoryUserRepo(t)
+	repo := userRepo(t)
 
 	user, err := dto.NewUser(userData(), dto.PermissionDefault, bcrypt.MinCost)
 	assert.NoError(t, err)
@@ -136,7 +98,7 @@ func TestUserUpdateName(t *testing.T) {
 
 func TestUserDelete(t *testing.T) {
 	t.Parallel()
-	repo := inMemoryUserRepo(t)
+	repo := userRepo(t)
 
 	t.Run("Inexistent", func(t *testing.T) {
 		// t.Parallel()
