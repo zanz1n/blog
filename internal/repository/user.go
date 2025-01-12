@@ -42,10 +42,8 @@ type UserRepository struct {
 	q *userQueries
 }
 
-func NewUserRepository(db *sqlx.DB) (*UserRepository, error) {
-	return &UserRepository{
-		q: newUserQueries(db),
-	}, nil
+func NewUserRepository(db *sqlx.DB) *UserRepository {
+	return &UserRepository{q: newUserQueries(db)}
 }
 
 func (r *UserRepository) Create(ctx context.Context, user dto.User) error {

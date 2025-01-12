@@ -14,11 +14,7 @@ import (
 
 func userRepo(t *testing.T) *repository.UserRepository {
 	db := GetDb(t)
-
-	userRepo, err := repository.NewUserRepository(db)
-	assert.NoError(t, err)
-
-	return userRepo
+	return repository.NewUserRepository(db)
 }
 
 func userData() dto.UserCreateData {

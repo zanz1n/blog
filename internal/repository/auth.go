@@ -47,10 +47,8 @@ func NewAuthRepository(
 	pub ed25519.PublicKey,
 	issuer string,
 ) *AuthRepository {
-	parser := jwt.NewParser(jwt.WithExpirationRequired())
-
 	return &AuthRepository{
-		parser: parser,
+		parser: jwt.NewParser(),
 		priv:   priv,
 		pub:    pub,
 		issuer: issuer,
