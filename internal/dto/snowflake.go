@@ -9,6 +9,8 @@ import (
 	"math/rand/v2"
 	"strconv"
 	"time"
+
+	"github.com/zanz1n/blog/internal/utils"
 )
 
 const (
@@ -88,7 +90,7 @@ func (s *Snowflake) Scan(src any) error {
 		} else if len(src) == 8 {
 			return s.Scan(binary.LittleEndian.Uint64(src))
 		} else {
-			return s.Scan(string(src))
+			return s.Scan(utils.UnsafeString(src))
 		}
 	case nil:
 		*s = NullSnowflake

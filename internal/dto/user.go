@@ -5,6 +5,7 @@ import (
 	"log/slog"
 	"time"
 
+	"github.com/zanz1n/blog/internal/utils"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -12,7 +13,7 @@ type User struct {
 	ID         Snowflake  `db:"id" json:"id,string"`
 	CreatedAt  Timestamp  `db:"created_at" json:"created_at"`
 	UpdatedAt  Timestamp  `db:"updated_at" json:"updated_at"`
-	Permission Permission `db:"permission" json:"permission"`
+	Permission Permission `db:"permission" json:"-"`
 	Email      string     `db:"email" json:"email"`
 	Nickname   string     `db:"nickname" json:"nickname"`
 	Name       string     `db:"name" json:"name,omitempty"`
@@ -20,7 +21,7 @@ type User struct {
 }
 
 func (u *User) PasswordMatches(passwd string) bool {
-	err := bcrypt.CompareHashAndPassword(u.Password, []byte(passwd))
+	err := bcrypt.CompareHashAndPassword(u.Password, utils.UnsafeBytes(passwd))
 	if err != nil && !errors.Is(err, bcrypt.ErrMismatchedHashAndPassword) {
 		slog.Error("User: failed to compare hashed password", "error", err)
 	}
@@ -37,16 +38,17 @@ type UserCreateData struct {
 
 func NewUser(data UserCreateData, permission Permission, hashCost int) (User, error) {
 	now := Timestamp{time.Now().Round(time.Millisecond)}
-	id := NewSnowflake()
 
 	if bcrypt.MinCost > hashCost || bcrypt.MaxCost < hashCost {
 		hashCost = bcrypt.DefaultCost
 	}
 
-	hash, err := bcrypt.GenerateFromPassword([]byte(data.Password), hashCost)
+	hash, err := bcrypt.GenerateFromPassword(utils.UnsafeBytes(data.Password), hashCost)
 	if err != nil {
 		return User{}, err
 	}
+
+	id := NewSnowflakeTime(now.Time)
 
 	return User{
 		ID:         id,
