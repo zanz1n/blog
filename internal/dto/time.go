@@ -27,6 +27,8 @@ func (t *Timestamp) Scan(src any) error {
 		*t = Timestamp{time.UnixMilli(int64(src))}
 	case uint64:
 		*t = Timestamp{time.UnixMilli(int64(src))}
+	case time.Time:
+		*t = Timestamp{src}
 	default:
 		return fmt.Errorf("Scan: unable to scan type %T into time.Time", src)
 	}
