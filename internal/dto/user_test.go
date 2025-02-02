@@ -27,3 +27,12 @@ func TestUserPasswordMatches(t *testing.T) {
 	matches := user.PasswordMatches(data.Password)
 	assert.True(matches)
 }
+
+func TestUserSnowflake(t *testing.T) {
+	assert := require.New(t)
+
+	user, err := dto.NewUser(userData(), dto.PermissionDefault, bcrypt.MinCost)
+	assert.NoError(err)
+
+	assert.Equal(user.ID.Timestamp(), user.CreatedAt.Time)
+}
