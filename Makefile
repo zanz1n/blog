@@ -1,24 +1,68 @@
+ifneq ($(wildcard .env),)
 include .env
+endif
 
-SHELL := /bin/bash
-MAKEFLAGS += --no-print-directory
+SHELL := /usr/bin/env bash -o errexit -o pipefail -o nounset
 
-GOBIN = go
+DEBUG ?= 0
 
-IDEN1 = "*"
-IDEN2 = "**"
+PREFIX ?= blog-
+SUFIX ?=
 
-HOST_OS != $(GOBIN) env GOOS
-HOST_ARCH != $(GOBIN) env GOARCH
+BINS = server cli
+DIR ?= bin
 
-VERSION != git rev-parse HEAD | head -c8
+GO ?= go
 
-CGO_ENABLED=1
-GOOS = $(HOST_OS)
-GOARCH = $(HOST_ARCH)
+VERSION ?= release-$(shell git rev-parse HEAD | head -c8)
 
-LDFLAGS = -X github.com/zanz1n/blog/config.Version=$(VERSION) -X github.com/zanz1n/blog/config.Name=blog
-TESTFLAGS = -v -race
+GOMODPATH := github.com/zanz1n/blog
+LDFLAGS := -X $(GOMODPATH)/config.Version=$(VERSION)
+
+ifeq ($(DEBUG), 1)
+SUFIX += -debug
+else
+LDFLAGS += -s -w
+endif
+
+OS := $(if $(GOOS),$(GOOS),$(shell GOTOOLCHAIN=local $(GO) env GOOS))
+ARCH := $(if $(GOARCH),$(GOARCH),$(shell GOTOOLCHAIN=local $(GO) env GOARCH))
+
+ifeq ($(OS), windows)
+SUFIX += .exe
+endif
+
+default: check all
+
+all: $(addprefix build-, $(BINS))
+
+run-%: build-%
+ifneq ($(OS), $(shell GOTOOLCHAIN=local $(GO) env GOOS))
+	$(error when running GOOS must be equal to the current os)
+else ifneq ($(ARCH), $(shell GOTOOLCHAIN=local $(GO) env GOARCH))
+	$(error when running GOARCH must be equal to the current cpu arch)
+else ifneq ($(OUTPUT),)
+	$(OUTPUT)
+else
+	$(DIR)/$(PREFIX)$*-$(OS)-$(ARCH)$(SUFIX)
+endif
+
+build-%: $(DIR)
+ifneq ($(OUTPUT),) 
+	GOOS=$(OS) GOARCH=$(ARCH) $(GO) build -ldflags "$(LDFLAGS)" \
+	-tags "libsqlite3 $(OS) $(ARCH)" -o $(OUTPUT) $(GOMODPATH)/cmd/$*
+else
+	GOOS=$(OS) GOARCH=$(ARCH) $(GO) build -ldflags "$(LDFLAGS)" -tags "libsqlite3 $(OS) $(ARCH)" \
+	-o $(DIR)/$(PREFIX)$*-$(OS)-$(ARCH)$(SUFIX) $(GOMODPATH)/cmd/$*
+endif
+ifneq ($(POST_BUILD_CHMOD),)
+	chmod $(POST_BUILD_CHMOD) $(DIR)/$(PREFIX)$*-$(OS)-$(ARCH)$(SUFIX)
+endif
+
+$(DIR):
+	mkdir $(DIR)
+
+TESTFLAGS := -v -race
 
 ifeq ($(SHORTTESTS), 1)
 TESTFLAGS += -short
@@ -28,65 +72,41 @@ ifeq ($(NOTESTCACHE), 1)
 TESTFLAGS += -count=1
 endif
 
-.PHONY: default
+test:
+ifneq ($(SKIPTESTS), 1)
+	$(GO) test ./... $(TESTFLAGS)
+else
+    $(warning skipped tests)
+endif
 
-default: check build-dev build
+bench:
+	$(GO) test -bench=. -count 3 -benchmem -run=^# ./...
 
-run: override GOOS = $(HOST_OS)
-run: override GOARCH = $(HOST_ARCH)
-run: build-dev
-	@echo "$(IDEN1) Running app:"
-	@./bin/blog_$(GOOS)_$(GOARCH)_debug -migrate
-
-build: OUT ?= bin/blog_$(GOOS)_$(GOARCH)
-build: BTAG = Build
-build: ALL_LDFLAGS = -s -w $(LDFLAGS)
-
-build-dev: OUT ?= bin/blog_$(GOOS)_$(GOARCH)_debug
-build-dev: BTAG = Build dev
-build-dev: ALL_LDFLAGS = $(LDFLAGS)
-
-build build-dev: check
-	@echo "$(IDEN1) $(BTAG):"
-	@echo "$(IDEN2) OS: $(GOOS) ARCH: $(GOARCH)"
-	$(GOBIN) build -v -ldflags "$(ALL_LDFLAGS)" -o $(OUT) .
-	@echo "$(IDEN1) $(BTAG): completed"
+.SILENT: gen-checksums
+gen-checksums: $(DIR)
+	DIR=$(DIR) ./scripts/gen-checksums.sh
 
 check: deps generate test
 
-test:
-	@echo "$(IDEN1) Test:"
-ifneq ($(SKIPTESTS), 1)
-	$(GOBIN) test ./... $(TESTFLAGS)
-	@echo "$(IDEN1) Test: completed"
-else
-	@echo "$(IDEN1) Test: skipped"
-endif
-
-generate:
-	@echo "$(IDEN1) Codegen:"
-
-	templ generate
-	@echo "$(IDEN2) Generated templ components"
-
-	@echo "$(IDEN1) Codegen: completed"
+update:
+	$(GO) mod tidy
+	$(GO) get -u ./...
+	$(GO) mod tidy
 
 deps:
-	@echo "$(IDEN1) Download binaries:"
+	$(GO) install github.com/a-h/templ/cmd/templ@latest
 
-	$(GOBIN) install github.com/a-h/templ/cmd/templ@latest
-	@echo "$(IDEN2) Downloaded templ"
+generate:
+	templ generate
 
-	@echo "$(IDEN1) Download binaries: completed"
+fmt:
+	go fmt ./...
 
-update:
-	@echo "$(IDEN1) Update:"
-
-	$(GOBIN) mod tidy
-
-	$(GOBIN) get -u ./...
-	@echo "$(IDEN2) Updated go modules"
-
-	$(GOBIN) mod tidy
-	@echo "$(IDEN2) Tidy go mod file"
-	@echo "$(IDEN1) Update: completed"
+debug:
+	@echo DEBUG = $(DEBUG)
+	@echo DIR = $(DIR)
+	@echo BINNAME = $(PREFIX)%-$(OS)-$(ARCH)$(SUFIX)
+	@echo GOMODPATH = $(GOMODPATH)
+	@echo VERSION = $(VERSION)
+	@echo BINS = $(BINS)
+	@echo LDFLAGS = $(LDFLAGS)
