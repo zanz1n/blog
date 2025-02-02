@@ -87,7 +87,7 @@ func initDb() (*sqlx.DB, error) {
 }
 
 func launchPostgresCt() (string, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
 	defer cancel()
 
 	container, err := postgres.Run(
@@ -99,7 +99,7 @@ func launchPostgresCt() (string, error) {
 		testcontainers.WithWaitStrategy(
 			wait.ForLog("database system is ready to accept connections").
 				WithOccurrence(2).
-				WithStartupTimeout(5*time.Second)),
+				WithStartupTimeout(10*time.Second)),
 	)
 
 	if err != nil {
