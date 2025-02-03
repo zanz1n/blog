@@ -40,8 +40,10 @@ func TestUserCreate(t *testing.T) {
 	user, err := dto.NewUser(userData(), dto.PermissionDefault, bcrypt.MinCost)
 	assert.NoError(t, err)
 
-	err = repo.Create(context.Background(), user)
-	assert.NoError(t, err)
+	t.Run("Create", func(t *testing.T) {
+		err = repo.Create(context.Background(), user)
+		assert.NoError(t, err)
+	})
 
 	t.Run("Duplicate", func(t *testing.T) {
 		// t.Parallel()
