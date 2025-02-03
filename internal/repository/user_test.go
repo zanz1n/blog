@@ -9,12 +9,22 @@ import (
 	assert "github.com/stretchr/testify/require"
 	"github.com/zanz1n/blog/internal/dto"
 	"github.com/zanz1n/blog/internal/repository"
+	"github.com/zanz1n/blog/internal/utils"
 	"golang.org/x/crypto/bcrypt"
 )
 
-func userRepo(t *testing.T) *repository.UserRepository {
+var userRepoInstance = utils.NewLazyParam(initUserRepo)
+
+func initUserRepo(t *testing.T) (*repository.UserRepository, error) {
 	db := GetDb(t)
-	return repository.NewUserRepository(db)
+	repo := repository.NewUserRepository(db)
+	return repo, nil
+}
+
+func userRepo(t *testing.T) *repository.UserRepository {
+	repo, err := userRepoInstance.Get(t)
+	assert.NoError(t, err)
+	return repo
 }
 
 func userData() dto.UserCreateData {
@@ -31,7 +41,7 @@ func TestUserCreate(t *testing.T) {
 	repo := userRepo(t)
 
 	t.Run("Inexistent", func(t *testing.T) {
-		// t.Parallel()
+		t.Parallel()
 		_, err := repo.GetById(context.Background(), dto.NewSnowflake())
 		assert.Error(t, err)
 		assert.ErrorIs(t, err, repository.ErrUserNotFound)
@@ -46,14 +56,12 @@ func TestUserCreate(t *testing.T) {
 	})
 
 	t.Run("Duplicate", func(t *testing.T) {
-		// t.Parallel()
 		err := repo.Create(context.Background(), user)
 		assert.Error(t, err)
 		assert.ErrorIs(t, err, repository.ErrUserAlreadyExists)
 	})
 
 	t.Run("Fetch", func(t *testing.T) {
-		// t.Parallel()
 		user2, err := repo.GetById(context.Background(), user.ID)
 		assert.NoError(t, err)
 		assert.Equal(t, user, user2)
@@ -71,16 +79,27 @@ func TestUserUpdateName(t *testing.T) {
 	user, err := dto.NewUser(userData(), dto.PermissionDefault, bcrypt.MinCost)
 	assert.NoError(t, err)
 
-	err = repo.Create(context.Background(), user)
-	assert.NoError(t, err)
+	t.Run("Inexistent", func(t *testing.T) {
+		t.Parallel()
+		newName := randString(12)
+		_, err := repo.UpdateName(context.Background(), dto.NewSnowflake(), newName)
+		assert.Error(t, err)
+		assert.ErrorIs(t, err, repository.ErrUserNotFound)
+	})
+
+	assert.True(t, t.Run("Create", func(t *testing.T) {
+		err = repo.Create(context.Background(), user)
+		assert.NoError(t, err)
+	}))
 
 	time.Sleep(5 * time.Millisecond)
 
 	t.Run("Update", func(t *testing.T) {
-		user2, err := repo.UpdateName(context.Background(), user.ID, "New Name")
+		newName := randString(12)
+		user2, err := repo.UpdateName(context.Background(), user.ID, newName)
 		assert.NoError(t, err)
 
-		user.Name = "New Name"
+		user.Name = newName
 		assert.Greater(t, user2.UpdatedAt.UnixMilli(), user.UpdatedAt.UnixMilli())
 		user.UpdatedAt = user2.UpdatedAt
 
@@ -99,7 +118,7 @@ func TestUserDelete(t *testing.T) {
 	repo := userRepo(t)
 
 	t.Run("Inexistent", func(t *testing.T) {
-		// t.Parallel()
+		t.Parallel()
 		_, err := repo.DeleteById(context.Background(), dto.NewSnowflake())
 		assert.Error(t, err)
 		assert.ErrorIs(t, err, repository.ErrUserNotFound)
