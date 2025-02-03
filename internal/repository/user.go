@@ -47,7 +47,7 @@ func NewUserRepository(db *sqlx.DB) *UserRepository {
 }
 
 func (r *UserRepository) Create(ctx context.Context, user dto.User) error {
-	sttm, err := r.q.get("Create")
+	sttm, err := r.q.Create()
 	if err != nil {
 		return err
 	}
@@ -80,7 +80,7 @@ func (r *UserRepository) Create(ctx context.Context, user dto.User) error {
 func (r *UserRepository) GetById(ctx context.Context, id dto.Snowflake) (dto.User, error) {
 	var user dto.User
 
-	sttm, err := r.q.get("GetById")
+	sttm, err := r.q.GetById()
 	if err != nil {
 		return user, err
 	}
@@ -98,7 +98,7 @@ func (r *UserRepository) GetById(ctx context.Context, id dto.Snowflake) (dto.Use
 func (r *UserRepository) GetByEmail(ctx context.Context, email string) (dto.User, error) {
 	var user dto.User
 
-	sttm, err := r.q.get("GetByEmail")
+	sttm, err := r.q.GetByEmail()
 	if err != nil {
 		return user, err
 	}
@@ -118,7 +118,7 @@ func (r *UserRepository) UpdateName(ctx context.Context, id dto.Snowflake, name 
 
 	var user dto.User
 
-	sttm, err := r.q.get("UpdateName")
+	sttm, err := r.q.UpdateName()
 	if err != nil {
 		return user, err
 	}
@@ -141,7 +141,7 @@ func (r *UserRepository) UpdateName(ctx context.Context, id dto.Snowflake, name 
 func (r *UserRepository) DeleteById(ctx context.Context, id dto.Snowflake) (dto.User, error) {
 	var user dto.User
 
-	sttm, err := r.q.get("DeleteById")
+	sttm, err := r.q.DeleteById()
 	if err != nil {
 		return user, err
 	}

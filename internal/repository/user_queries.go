@@ -29,3 +29,23 @@ func newUserQueries(db *sqlx.DB) userQueries {
 
 	return userQueries{q}
 }
+
+func (q *userQueries) Create() (*sqlx.Stmt, error) {
+	return q.get("Create")
+}
+
+func (q *userQueries) GetById() (*sqlx.Stmt, error) {
+	return q.get("GetById")
+}
+
+func (q *userQueries) GetByEmail() (*sqlx.Stmt, error) {
+	return q.get("GetByEmail")
+}
+
+func (q *userQueries) UpdateName() (*sqlx.Stmt, error) {
+	return q.get("UpdateName")
+}
+
+func (q *userQueries) DeleteById() (*sqlx.Stmt, error) {
+	return q.get("DeleteById")
+}
