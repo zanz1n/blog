@@ -11,6 +11,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
+	"github.com/zanz1n/blog/internal/dto"
 	"github.com/zanz1n/blog/internal/markdown"
 	"github.com/zanz1n/blog/internal/utils"
 )
@@ -31,21 +32,21 @@ func (j jsonHelper) String() string {
 	return utils.UnsafeString(buf)
 }
 
-func TestMarkdownDoc(t *testing.T) {
-	testCases := []struct {
-		path      string
-		headingct int
-	}{
-		{
-			path:      "https://raw.githubusercontent.com/markdown-it/markdown-it/refs/heads/master/support/demo_template/sample.md",
-			headingct: 24,
-		},
-		{
-			path:      "https://raw.githubusercontent.com/mxstbr/markdown-test-file/refs/heads/master/TEST.md",
-			headingct: 13,
-		},
-	}
+var testCases = []struct {
+	path      string
+	headingct int
+}{
+	{
+		path:      "https://raw.githubusercontent.com/markdown-it/markdown-it/refs/heads/master/support/demo_template/sample.md",
+		headingct: 24,
+	},
+	{
+		path:      "https://raw.githubusercontent.com/mxstbr/markdown-test-file/refs/heads/master/TEST.md",
+		headingct: 13,
+	},
+}
 
+func TestMarkdownDoc(t *testing.T) {
 	for _, tcase := range testCases {
 		pathUrl, err := url.Parse(tcase.path)
 		require.NoError(t, err)
@@ -91,7 +92,7 @@ func TestMarkdownDoc(t *testing.T) {
 				require.NoError(t, err)
 				defer file.Close()
 
-				output := doc.Result()
+				output := doc.Content()
 
 				written, err := io.Copy(file, doc)
 				require.NoError(t, err)
@@ -99,20 +100,20 @@ func TestMarkdownDoc(t *testing.T) {
 
 				fileBuf, err := os.ReadFile(tempfile)
 				require.NoError(t, err)
-				require.Equal(t, output, fileBuf)
+				require.Equal(t, output, dto.ArticleContent(fileBuf))
 			})
 		})
 	}
 }
 
 func BenchmarkMarkdown(b *testing.B) {
-	sourceFile, err := os.Open("test1.md")
+	res, err := http.Get(testCases[0].path)
 	require.NoError(b, err)
 
 	doc := markdown.GetDocument()
 	defer markdown.PutDocument(doc)
 
-	_, err = io.Copy(doc, sourceFile)
+	_, err = io.Copy(doc, res.Body)
 	require.NoError(b, err)
 
 	b.Run("Parse", func(b *testing.B) {

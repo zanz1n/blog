@@ -56,8 +56,8 @@ func (d *Document) Source() []byte {
 	return d.source.Bytes()
 }
 
-func (d *Document) Result() []byte {
-	return d.output.Bytes()
+func (d *Document) Content() dto.ArticleContent {
+	return dto.ArticleContent(d.output.Bytes())
 }
 
 func (d *Document) Parse() {
