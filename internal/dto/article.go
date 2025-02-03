@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"time"
 
 	"github.com/a-h/templ"
 	"github.com/zanz1n/blog/internal/utils"
@@ -23,19 +24,47 @@ const (
 )
 
 type Article struct {
-	ID        Snowflake `db:"id" json:"id,string"`
-	CreatedAt Timestamp `db:"created_at" json:"created_at"`
-	UpdatedAt Timestamp `db:"updated_at" json:"updated_at"`
-	UserID    Snowflake `db:"user_id" json:"user_id,string"`
-	Title     string    `db:"title" json:"title"`
+	ID          Snowflake `db:"id" json:"id,string"`
+	CreatedAt   Timestamp `db:"created_at" json:"created_at"`
+	UpdatedAt   Timestamp `db:"updated_at" json:"updated_at"`
+	UserID      Snowflake `db:"user_id" json:"user_id,string"`
+	Title       string    `db:"title" json:"title"`
+	Description string    `db:"description" json:"description"`
 
 	// Can be nil if not fetched with user
-	User *User `db:"user" json:"user,omitempty"`
+	User *User `json:"user,omitempty"`
 
 	// Can be empty if not fetched with content
 	Indexing ArticleIndexing `db:"indexing" json:"indexing,omitempty"`
 	// Can be empty if not fetched with content
 	Content ArticleContent `db:"content" json:"content,omitempty"`
+}
+
+type ArticleCreateData struct {
+	Title       string `json:"title" validate:"required"`
+	Description string `json:"description"`
+}
+
+func NewArticle(
+	userId Snowflake,
+	idx ArticleIndexing,
+	content ArticleContent,
+	data ArticleCreateData,
+) Article {
+	now := Timestamp{time.Now().Round(time.Millisecond)}
+
+	id := NewSnowflakeTime(now.Time)
+
+	return Article{
+		ID:          id,
+		CreatedAt:   now,
+		UpdatedAt:   now,
+		UserID:      userId,
+		Title:       data.Title,
+		Description: data.Description,
+		Indexing:    idx,
+		Content:     content,
+	}
 }
 
 var (
