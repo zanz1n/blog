@@ -2,10 +2,11 @@ package repository_test
 
 import (
 	"context"
+	"crypto/rand"
 	"io"
 	"log"
 	"log/slog"
-	"math/rand/v2"
+	mrand "math/rand/v2"
 	"sync"
 	"testing"
 	"time"
@@ -114,7 +115,16 @@ var letterRunes = []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
 func randString(n int) string {
 	b := make([]rune, n)
 	for i := range b {
-		b[i] = letterRunes[rand.IntN(len(letterRunes))]
+		b[i] = letterRunes[mrand.IntN(len(letterRunes))]
 	}
 	return string(b)
+}
+
+func randBytes(n int) []byte {
+	b := make([]byte, n)
+	_, err := rand.Read(b)
+	if err != nil {
+		panic(err)
+	}
+	return b
 }
