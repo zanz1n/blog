@@ -5,9 +5,7 @@ import (
 	"crypto/rand"
 	"io"
 	"log"
-	"log/slog"
 	mrand "math/rand/v2"
-	"sync"
 	"testing"
 	"time"
 
@@ -15,7 +13,7 @@ import (
 	"github.com/jmoiron/sqlx"
 	_ "github.com/mattn/go-sqlite3"
 	"github.com/pressly/goose/v3"
-	"github.com/stretchr/testify/require"
+	assert "github.com/stretchr/testify/require"
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/modules/postgres"
 	"github.com/testcontainers/testcontainers-go/wait"
@@ -23,28 +21,15 @@ import (
 	"github.com/zanz1n/blog/migrations"
 )
 
-var onceMigrate sync.Once
-var lazyDb utils.Lazy[sqlx.DB]
-
-func init() {
-	lazyDb = utils.NewLazy(initDb)
-}
+var lazyDb = utils.NewLazy(initDb)
 
 func GetDb(t *testing.T) *sqlx.DB {
-	var (
-		db  *sqlx.DB
-		err error
-	)
-	if testing.Short() {
-		db, err = initDb()
-		t.Cleanup(func() {
-			db.Close()
-		})
-	} else {
-		db, err = lazyDb.Get()
+	db, err := lazyDb.Get()
+	if err != nil {
+		log.Printf("❌ Failed to init database: %s\n", err)
 	}
 
-	require.NoError(t, err)
+	assert.NoError(t, err)
 	return db
 }
 
@@ -52,37 +37,46 @@ func initDb() (*sqlx.DB, error) {
 	driver := "sqlite3"
 	dialect := "sqlite3"
 	mpath := "sqlite"
-	url := "file::memory:"
+	url := "file::memory:?cache=shared"
 
 	if !testing.Short() {
 		driver = "pgx/v5"
 		dialect = "postgres"
 		mpath = "postgres"
+
 		endpoint, err := launchPostgresCt()
 		if err != nil {
 			return nil, err
 		}
+
 		url = endpoint
 	}
 
+	log.Printf("✅ Using %s for repository tests\n", dialect)
+
 	db, err := sqlx.Open(driver, url)
 	if err != nil {
-		slog.Error(err.Error())
 		return nil, err
 	}
 
-	onceMigrate.Do(func() {
-		if err := goose.SetDialect(dialect); err != nil {
-			panic(err)
-		}
-		goose.SetBaseFS(migrations.EmbedMigrations)
-		goose.SetLogger(log.New(io.Discard, "", log.Flags()))
-	})
+	log.Printf("✅ Connected to %s instance\n", dialect)
 
-	if err = goose.Up(db.DB, mpath); err != nil {
-		slog.Error(err.Error())
+	err = goose.SetDialect(dialect)
+	if err != nil {
 		return nil, err
 	}
+
+	goose.SetBaseFS(migrations.EmbedMigrations)
+	goose.SetLogger(log.New(io.Discard, "", log.Flags()))
+
+	err = goose.Up(db.DB, mpath)
+	if err != nil {
+		return nil, err
+	}
+
+	log.Printf("✅ Migrations completed on %s\n", dialect)
+
+	log.Printf("✅ Sucessfully initialized %s\n", dialect)
 
 	return db, err
 }
