@@ -127,8 +127,10 @@ func TestUserDelete(t *testing.T) {
 	user, err := dto.NewUser(userData(), dto.PermissionDefault, bcrypt.MinCost)
 	assert.NoError(t, err)
 
-	err = repo.Create(context.Background(), user)
-	assert.NoError(t, err)
+	assert.True(t, t.Run("Create", func(t *testing.T) {
+		err = repo.Create(context.Background(), user)
+		assert.NoError(t, err)
+	}))
 
 	t.Run("Delete", func(t *testing.T) {
 		user2, err := repo.DeleteById(context.Background(), user.ID)

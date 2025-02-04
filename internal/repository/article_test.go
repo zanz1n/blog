@@ -21,14 +21,11 @@ func initArticleRepo(t *testing.T) (*repository.ArticleRepository, error) {
 	return repo, nil
 }
 
-func articleRepo(t *testing.T) (*repository.ArticleRepository, *repository.UserRepository) {
+func articleRepo(t *testing.T) *repository.ArticleRepository {
 	repo, err := articleRepoInstance.Get(t)
 	assert.NoError(t, err)
 
-	userRepo, err := userRepoInstance.Get(t)
-	assert.NoError(t, err)
-
-	return repo, userRepo
+	return repo
 }
 
 func articleIndexing(n int) dto.ArticleIndexing {
@@ -58,7 +55,7 @@ func articleData() dto.ArticleCreateData {
 
 func TestArticleCreate(t *testing.T) {
 	t.Parallel()
-	articles, users := articleRepo(t)
+	articles := articleRepo(t)
 
 	t.Run("Inexistent", func(t *testing.T) {
 		t.Parallel()
@@ -67,30 +64,11 @@ func TestArticleCreate(t *testing.T) {
 		assert.ErrorIs(t, err, repository.ErrArticleNotFound)
 	})
 
-	user, err := dto.NewUser(userData(), dto.PermissionDefault, 4)
-	assert.NoError(t, err)
-
-	assert.True(t, t.Run("CreateUser", func(t *testing.T) {
-		err = users.Create(context.Background(), user)
-		assert.NoError(t, err)
-	}))
-
+	article, user := createArticle(t)
 	user.Password = nil
 
-	articleIdx, articleContent, data := articleData2()
-	article := dto.NewArticle(user.ID, articleIdx, articleContent, data)
-	assert.Equal(t, article.Content, articleContent)
-	assert.Equal(t, articleIdx, article.Indexing)
-	assert.Equal(t, data.Title, article.Title)
-	assert.Equal(t, data.Description, article.Description)
-
-	assert.True(t, t.Run("Create", func(t *testing.T) {
-		err = articles.Create(context.Background(), article)
-		assert.NoError(t, err)
-	}))
-
 	t.Run("Duplicate", func(t *testing.T) {
-		err = articles.Create(context.Background(), article)
+		err := articles.Create(context.Background(), article)
 		assert.Error(t, err)
 		assert.ErrorIs(t, err, repository.ErrArticleAlreadyExists)
 	})
@@ -145,7 +123,7 @@ func TestArticleCreate(t *testing.T) {
 
 func TestArticleUpdate(t *testing.T) {
 	t.Parallel()
-	articles, users := articleRepo(t)
+	articles := articleRepo(t)
 
 	t.Run("Inexistent", func(t *testing.T) {
 		t.Parallel()
@@ -161,21 +139,7 @@ func TestArticleUpdate(t *testing.T) {
 		assert.ErrorIs(t, err, repository.ErrArticleNotFound)
 	})
 
-	user, err := dto.NewUser(userData(), dto.PermissionDefault, 4)
-	assert.NoError(t, err)
-
-	assert.True(t, t.Run("CreateUser", func(t *testing.T) {
-		err = users.Create(context.Background(), user)
-		assert.NoError(t, err)
-	}))
-
-	articleIdx, articleContent, data := articleData2()
-	article := dto.NewArticle(user.ID, articleIdx, articleContent, data)
-
-	assert.True(t, t.Run("Create", func(t *testing.T) {
-		err = articles.Create(context.Background(), article)
-		assert.NoError(t, err)
-	}))
+	article, _ := createArticle(t)
 
 	time.Sleep(5 * time.Millisecond)
 
@@ -247,4 +211,63 @@ func TestArticleUpdate(t *testing.T) {
 		assert.NoError(t, err)
 		assert.Equal(t, article, article2)
 	})
+}
+
+func TestArticleDelete(t *testing.T) {
+	t.Parallel()
+	articles := articleRepo(t)
+
+	t.Run("Inexistent", func(t *testing.T) {
+		t.Parallel()
+		_, err := articles.Delete(context.Background(), dto.NewSnowflake())
+		assert.Error(t, err)
+		assert.ErrorIs(t, err, repository.ErrArticleNotFound)
+	})
+
+	article, _ := createArticle(t)
+
+	t.Run("Delete", func(t *testing.T) {
+		article2, err := articles.Delete(context.Background(), article.ID)
+		assert.NoError(t, err)
+
+		assert.Nil(t, article2.Indexing)
+		assert.Nil(t, article2.Content)
+
+		article2.Indexing = article.Indexing
+		article2.Content = article.Content
+	})
+
+	t.Run("Fetch", func(t *testing.T) {
+		_, err := articles.Get(context.Background(), article.ID)
+		assert.Error(t, err)
+		assert.ErrorIs(t, err, repository.ErrArticleNotFound)
+	})
+}
+
+func createArticle(t *testing.T) (dto.Article, dto.User) {
+	articles := articleRepo(t)
+	users := userRepo(t)
+
+	user, err := dto.NewUser(userData(), dto.PermissionDefault, 4)
+	assert.NoError(t, err)
+
+	assert.True(t, t.Run("CreateUser", func(t *testing.T) {
+		err := users.Create(context.Background(), user)
+		assert.NoError(t, err)
+	}))
+
+	articleIdx, articleContent, data := articleData2()
+	article := dto.NewArticle(user.ID, articleIdx, articleContent, data)
+
+	assert.Equal(t, article.Content, articleContent)
+	assert.Equal(t, articleIdx, article.Indexing)
+	assert.Equal(t, data.Title, article.Title)
+	assert.Equal(t, data.Description, article.Description)
+
+	assert.True(t, t.Run("Create", func(t *testing.T) {
+		err := articles.Create(context.Background(), article)
+		assert.NoError(t, err)
+	}))
+
+	return article, user
 }
