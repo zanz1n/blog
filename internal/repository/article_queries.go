@@ -60,13 +60,16 @@ const articleGetManyByUser = `SELECT
 id, created_at, updated_at, user_id, title, description
 FROM articles WHERE user_id = $1 LIMIT $2 OFFSET $3 ORDER BY id ASC`
 
-const articleUpdateDataQuery = `
-UPDATE articles SET title = $1, description = $2, updated_at = $3 WHERE id = $4 RETURNING *`
+const articleUpdateDataQuery = `UPDATE articles
+SET title = $1, description = $2, updated_at = $3 WHERE id = $4
+RETURNING id, created_at, updated_at, user_id, title, description`
 
-const articleUpdateContentQuery = `
-UPDATE articles SET indexing = $1, content = $2, updated_at = $3 WHERE id = $4 RETURNING *`
+const articleUpdateContentQuery = `UPDATE articles
+SET indexing = $1, content = $2, updated_at = $3 WHERE id = $4
+RETURNING id, created_at, updated_at, user_id, title, description`
 
-const articleDeleteQuery = `DELETE FROM articles WHERE id = $1 RETURNING *`
+const articleDeleteQuery = `DELETE FROM articles WHERE id = $1
+RETURNING id, created_at, updated_at, user_id, title, description`
 
 type articleQueries struct {
 	*queries
