@@ -100,7 +100,7 @@ generate:
 	templ generate
 
 fmt:
-	go fmt ./...
+	$(GO) fmt ./...
 
 debug:
 	@echo DEBUG = $(DEBUG)
