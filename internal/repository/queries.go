@@ -42,7 +42,7 @@ func (q *queries) add(query, name string) {
 		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 		defer cancel()
 
-		query = strings.ReplaceAll(query, "\n", " ")
+		query = strings.TrimSpace(strings.ReplaceAll(query, "\n", " "))
 
 		sttm, err := q.db.PreparexContext(ctx, query)
 		if err != nil {
