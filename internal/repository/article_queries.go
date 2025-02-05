@@ -54,11 +54,11 @@ WHERE articles.id = $1
 
 const articleGetMany = `SELECT
 id, created_at, updated_at, user_id, title, description
-FROM articles LIMIT $1 OFFSET $2 ORDER BY id ASC`
+FROM articles ORDER BY id ASC LIMIT $1 OFFSET $2`
 
 const articleGetManyByUser = `SELECT
 id, created_at, updated_at, user_id, title, description
-FROM articles WHERE user_id = $1 LIMIT $2 OFFSET $3 ORDER BY id ASC`
+FROM articles WHERE user_id = $1 ORDER BY id ASC LIMIT $2 OFFSET $3`
 
 const articleUpdateDataQuery = `UPDATE articles
 SET title = $1, description = $2, updated_at = $3 WHERE id = $4

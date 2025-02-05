@@ -37,14 +37,12 @@ var (
 )
 
 type ArticleRepository struct {
-	q  articleQueries
-	ur *UserRepository
+	q articleQueries
 }
 
-func NewArticleRepository(db *sqlx.DB, userRepo *UserRepository) *ArticleRepository {
+func NewArticleRepository(db *sqlx.DB) *ArticleRepository {
 	return &ArticleRepository{
-		q:  newArticleQueries(db),
-		ur: userRepo,
+		q: newArticleQueries(db),
 	}
 }
 
@@ -126,11 +124,6 @@ func (r *ArticleRepository) GetManyByUser(
 ) ([]dto.Article, error) {
 	var articles []dto.Article
 
-	user, err := r.ur.GetById(ctx, userId)
-	if err != nil {
-		return nil, err
-	}
-
 	sttm, err := r.q.GetManyByUser()
 	if err != nil {
 		return nil, err
@@ -139,10 +132,6 @@ func (r *ArticleRepository) GetManyByUser(
 	err = sttm.SelectContext(ctx, &articles, userId, pag.Limit, pag.Offset)
 	if err != nil {
 		slog.Error("ArticleRepository: GetManyByUser: sql error", "error", err)
-	}
-
-	for i := 0; i < len(articles); i++ {
-		articles[i].User = &user
 	}
 
 	return articles, err

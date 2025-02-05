@@ -2,7 +2,10 @@ package repository_test
 
 import (
 	"context"
+	"encoding/json"
 	"math/rand/v2"
+	"os"
+	"slices"
 	"testing"
 	"time"
 
@@ -15,9 +18,8 @@ import (
 var articleRepoInstance = utils.NewLazyParam(initArticleRepo)
 
 func initArticleRepo(t *testing.T) (*repository.ArticleRepository, error) {
-	userRepo := userRepo(t)
 	db := GetDb(t)
-	repo := repository.NewArticleRepository(db, userRepo)
+	repo := repository.NewArticleRepository(db)
 	return repo, nil
 }
 
@@ -241,6 +243,113 @@ func TestArticleDelete(t *testing.T) {
 		_, err := articles.Get(context.Background(), article.ID)
 		assert.Error(t, err)
 		assert.ErrorIs(t, err, repository.ErrArticleNotFound)
+	})
+}
+
+func TestArticleGetMany(t *testing.T) {
+	const (
+		UserCount = 3
+		Count     = 13
+		PageSize  = 5
+	)
+
+	t.Parallel()
+
+	db, err := InitDb(false)
+	assert.NoError(t, err)
+
+	userRepo := repository.NewUserRepository(db)
+	articleRepo := repository.NewArticleRepository(db)
+
+	users := make([]dto.User, UserCount)
+	articles := make([]dto.Article, UserCount*Count)
+	articlesByUser := make([][]dto.Article, UserCount)
+
+	for u := 0; u < UserCount; u++ {
+		user, err := dto.NewUser(userData(), dto.PermissionDefault, 4)
+		assert.NoError(t, err)
+
+		users[u] = user
+		articlesByUser[u] = make([]dto.Article, 0, Count)
+
+		for i := 0; i < Count; i++ {
+			data := articleData()
+			article := dto.NewArticle(user.ID, nil, nil, data)
+
+			articles[(u*Count)+i] = article
+			articlesByUser[u] = append(articlesByUser[u], article)
+		}
+		sortById(articlesByUser[u])
+	}
+	sortById(articles)
+
+	assert.True(t, t.Run("CreateUsers", func(t *testing.T) {
+		for _, user := range users {
+			if jf, err := json.MarshalIndent(user, "", "  "); err == nil {
+				os.Stdout.Write(jf)
+			}
+			err := userRepo.Create(context.Background(), user)
+			assert.NoError(t, err)
+		}
+	}))
+
+	assert.True(t, t.Run("CreateArticles", func(t *testing.T) {
+		for _, article := range articles {
+			err := articleRepo.Create(context.Background(), article)
+			assert.NoError(t, err)
+		}
+	}))
+
+	t.Run("GetMany", func(t *testing.T) {
+		result := []dto.Article{}
+
+		for i := 0; i < (UserCount*Count/PageSize)+1; i++ {
+			articles, err := articleRepo.GetMany(
+				context.Background(),
+				dto.Pagination{
+					Limit:  PageSize,
+					Offset: i * PageSize,
+				},
+			)
+			assert.NoError(t, err)
+
+			result = append(result, articles...)
+		}
+
+		assert.Equal(t, articles, result)
+	})
+
+	t.Run("GetManyByUser", func(t *testing.T) {
+		for u := 0; u < UserCount; u++ {
+			result := []dto.Article{}
+
+			for i := 0; i < (Count/PageSize)+1; i++ {
+				articles, err := articleRepo.GetManyByUser(
+					context.Background(),
+					users[u].ID,
+					dto.Pagination{
+						Limit:  PageSize,
+						Offset: i * PageSize,
+					},
+				)
+				assert.NoError(t, err)
+
+				result = append(result, articles...)
+			}
+
+			assert.Equal(t, articlesByUser[u], result)
+		}
+	})
+}
+
+func sortById(s []dto.Article) {
+	slices.SortFunc(s, func(a, b dto.Article) int {
+		if b.ID > a.ID {
+			return -1
+		} else if a.ID > b.ID {
+			return 1
+		}
+		return 0
 	})
 }
 
