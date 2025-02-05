@@ -2,9 +2,7 @@ package repository_test
 
 import (
 	"context"
-	"encoding/json"
 	"math/rand/v2"
-	"os"
 	"slices"
 	"testing"
 	"time"
@@ -285,9 +283,6 @@ func TestArticleGetMany(t *testing.T) {
 
 	assert.True(t, t.Run("CreateUsers", func(t *testing.T) {
 		for _, user := range users {
-			if jf, err := json.MarshalIndent(user, "", "  "); err == nil {
-				os.Stdout.Write(jf)
-			}
 			err := userRepo.Create(context.Background(), user)
 			assert.NoError(t, err)
 		}
