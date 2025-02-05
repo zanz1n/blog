@@ -6,6 +6,7 @@ import (
 	"io"
 	"log"
 	mrand "math/rand/v2"
+	"sync"
 	"testing"
 	"time"
 
@@ -21,7 +22,11 @@ import (
 	"github.com/zanz1n/blog/migrations"
 )
 
-var lazyDb = utils.NewLazy(initDb)
+var migrateOnce sync.Once
+
+var lazyDb = utils.NewLazy(func() (*sqlx.DB, error) {
+	return InitDb(true)
+})
 
 func GetDb(t *testing.T) *sqlx.DB {
 	db, err := lazyDb.Get()
@@ -33,11 +38,11 @@ func GetDb(t *testing.T) *sqlx.DB {
 	return db
 }
 
-func initDb() (*sqlx.DB, error) {
+func InitDb(shared bool) (*sqlx.DB, error) {
 	driver := "sqlite3"
 	dialect := "sqlite3"
 	mpath := "sqlite"
-	url := "file::memory:?cache=shared"
+	url := "file::memory:"
 
 	if !testing.Short() {
 		driver = "pgx/v5"
@@ -50,6 +55,8 @@ func initDb() (*sqlx.DB, error) {
 		}
 
 		url = endpoint
+	} else if shared {
+		url += "?cache=shared"
 	}
 
 	log.Printf("✅ Using %s for repository tests\n", dialect)
@@ -61,13 +68,15 @@ func initDb() (*sqlx.DB, error) {
 
 	log.Printf("✅ Connected to %s instance\n", dialect)
 
-	err = goose.SetDialect(dialect)
-	if err != nil {
-		return nil, err
-	}
+	migrateOnce.Do(func() {
+		err = goose.SetDialect(dialect)
+		if err != nil {
+			panic(err)
+		}
 
-	goose.SetBaseFS(migrations.EmbedMigrations)
-	goose.SetLogger(log.New(io.Discard, "", log.Flags()))
+		goose.SetBaseFS(migrations.EmbedMigrations)
+		goose.SetLogger(log.New(io.Discard, "", log.Flags()))
+	})
 
 	err = goose.Up(db.DB, mpath)
 	if err != nil {
