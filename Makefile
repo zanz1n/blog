@@ -5,6 +5,9 @@ endif
 SHELL := /usr/bin/env bash -o errexit -o pipefail -o nounset
 
 DEBUG ?= 0
+export DEBUG
+
+GOTAGS ?=
 
 PREFIX ?= blog-
 SUFIX ?=
@@ -21,6 +24,7 @@ LDFLAGS := -X $(GOMODPATH)/config.Version=$(VERSION)
 
 ifeq ($(DEBUG), 1)
 SUFIX += -debug
+GOTAGS += debug
 else
 LDFLAGS += -s -w
 endif
@@ -32,27 +36,22 @@ ifeq ($(OS), windows)
 SUFIX += .exe
 endif
 
-default: check all
+default: check build-server
 
 all: $(addprefix build-, $(BINS))
 
-run-%: build-%
-ifneq ($(OS), $(shell GOTOOLCHAIN=local $(GO) env GOOS))
-	$(error when running GOOS must be equal to the current os)
-else ifneq ($(ARCH), $(shell GOTOOLCHAIN=local $(GO) env GOARCH))
-	$(error when running GOARCH must be equal to the current cpu arch)
-else ifneq ($(OUTPUT),)
-	$(OUTPUT)
-else
-	$(DIR)/$(PREFIX)$*-$(OS)-$(ARCH)$(SUFIX)
-endif
+run:
+	cd web && bun run dev&
+	air
+
+build-server: generate
 
 build-%: $(DIR)
 ifneq ($(OUTPUT),) 
-	GOOS=$(OS) GOARCH=$(ARCH) $(GO) build -ldflags "$(LDFLAGS)" \
-	-tags "libsqlite3 $(OS) $(ARCH)" -o $(OUTPUT) $(GOMODPATH)/cmd/$*
+	GOOS=$(OS) GOARCH=$(ARCH) $(GO) build -ldflags "$(LDFLAGS)" -tags "$(GOTAGS)" \
+	-o $(OUTPUT) $(GOMODPATH)/cmd/$*
 else
-	GOOS=$(OS) GOARCH=$(ARCH) $(GO) build -ldflags "$(LDFLAGS)" -tags "libsqlite3 $(OS) $(ARCH)" \
+	GOOS=$(OS) GOARCH=$(ARCH) $(GO) build -ldflags "$(LDFLAGS)" -tags "$(GOTAGS)"  \
 	-o $(DIR)/$(PREFIX)$*-$(OS)-$(ARCH)$(SUFIX) $(GOMODPATH)/cmd/$*
 endif
 ifneq ($(POST_BUILD_CHMOD),)
