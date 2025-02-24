@@ -1,0 +1,47 @@
+root = "."
+testdata_dir = "testdata"
+tmp_dir = "tmp"
+
+[build]
+full_bin = "LISTEN_ADDR=:8080 ./tmp/server"
+cmd = "make OUTPUT=./tmp/server DEBUG=1 build-server"
+args_bin = []
+delay = 0
+include_ext = ["go", "templ"]
+exclude_dir = ["bin", "tmp", "data", "web/node_modules"]
+# include_dir = []
+exclude_regex = ["_test.go", "_templ.go"]
+exclude_unchanged = false
+follow_symlink = true
+kill_delay = "1s"
+log = "build-errors.log"
+poll = false
+poll_interval = 0
+rerun = false
+rerun_delay = 500
+send_interrupt = true
+stop_on_error = false
+
+[color]
+app = ""
+build = "yellow"
+main = "magenta"
+runner = "green"
+watcher = "cyan"
+
+[log]
+main_only = false
+silent = false
+time = false
+
+[misc]
+clean_on_exit = true
+
+[proxy]
+enabled = false
+app_port = 3338
+proxy_port = 8080
+
+[screen]
+clear_on_rebuild = true
+keep_scroll = true

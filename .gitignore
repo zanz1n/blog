@@ -1,4 +1,5 @@
 /bin
 /data
+/tmp
 .env
 data.db
