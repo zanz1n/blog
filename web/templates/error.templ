@@ -1,0 +1,14 @@
+package templates
+
+import "strconv"
+
+type ErrorData struct {
+	Message    string `json:"message"`
+	Code       int32  `json:"error_code"`
+	HttpStatus int    `json:"-"`
+}
+
+templ ErrorTempl(e ErrorData) {
+	<h1>{ strconv.Itoa(e.HttpStatus) }</h1>
+	<p>{ e.Message }</p>
+}

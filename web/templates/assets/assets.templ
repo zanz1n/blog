@@ -1,0 +1,47 @@
+// +build !debug
+
+package assets
+
+import (
+	"encoding/json"
+	"fmt"
+	"github.com/zanz1n/blog/web"
+)
+
+type SourceMap struct {
+	URL       string `json:"url"`
+	Integrity string `json:"integrity"`
+}
+
+var sourceMap struct {
+	JS  map[string]*SourceMap `json:"js"`
+	CSS map[string]*SourceMap `json:"css"`
+}
+
+func init() {
+	if err := json.Unmarshal(web.EmbedSourceMap, &sourceMap); err != nil {
+		panic(fmt.Errorf("failed to unmarshal source map: %s", err))
+	}
+
+	for _, mp := range sourceMap.JS {
+		mp.URL = staticCdn + mp.URL
+	}
+
+	for _, mp := range sourceMap.CSS {
+		mp.URL = staticCdn + mp.URL
+	}
+}
+
+templ JS(name string) {
+	{{ src, ok := sourceMap.JS[name] }}
+	if ok {
+		<script src={ src.URL } integrity={ src.Integrity }></script>
+	}
+}
+
+templ CSS() {
+	{{ src, ok := sourceMap.CSS["styles"] }}
+	if ok {
+		<link rel="stylesheet" href={ src.URL } integrity={ src.Integrity }/>
+	}
+}

@@ -1,0 +1,15 @@
+// +build debug
+
+package assets
+
+import "fmt"
+
+templ JS(name string) {
+	{{ url := fmt.Sprintf("%s/js/%s.js", staticCdn, name) }}
+	<script src={ url }></script>
+}
+
+templ CSS() {
+	{{ url := fmt.Sprintf("%s/css/styles.css", staticCdn) }}
+	<link rel="stylesheet" href={ url }/>
+}
