@@ -1,5 +1,26 @@
+node_modules
+
+# Output
+.output
+.vercel
 /bin
-/data
 /tmp
+
+web/build
+web/dist
+web/.source-map.json
+
+# Data
+/data
+*.db
+*.sqlite
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Env
 .env
-data.db
+.env.*
+!.env.example
+!.env.test
