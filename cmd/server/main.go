@@ -37,7 +37,7 @@ func init() {
 	signal.Notify(interrupt, syscall.SIGINT, syscall.SIGTERM)
 
 	if os.Getenv("DATABASE_URL") == "" {
-		os.Setenv("DATABASE_URL", "sqlite://data.db")
+		os.Setenv("DATABASE_URL", "file:sqlite.db")
 	}
 
 	if os.Getenv("LISTEN_ADDR") == "" {
