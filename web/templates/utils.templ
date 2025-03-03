@@ -1,0 +1,20 @@
+package templates
+
+import "github.com/zanz1n/blog/web/templates/assets"
+
+templ Page(body templ.Component, title string) {
+	<!DOCTYPE html>
+	<html lang="en">
+		<head>
+			<meta charset="UTF-8"/>
+			<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+			<title>{ title }</title>
+			@assets.CSS()
+			@assets.JS("theming")
+			@assets.JS("htmx")
+		</head>
+		<body>
+			@body
+		</body>
+	</html>
+}
