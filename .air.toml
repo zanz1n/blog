@@ -8,9 +8,9 @@ cmd = "make OUTPUT=./tmp/server DEBUG=1 build-server"
 args_bin = []
 delay = 0
 include_ext = ["go", "templ"]
-exclude_dir = ["bin", "tmp", "data", "web/node_modules"]
+exclude_dir = ["bin", "tmp", "data", "web/dist", "web/node_modules"]
 # include_dir = []
-exclude_regex = ["_test.go", "_templ.go"]
+exclude_regex = ["_test.go", "_templ.go", ".source-map.json"]
 exclude_unchanged = false
 follow_symlink = true
 kill_delay = "1s"
