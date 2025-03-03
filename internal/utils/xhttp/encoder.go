@@ -19,12 +19,6 @@ var mediaTypes = []contenttype.MediaType{ctypeHtml, ctypeJson}
 
 type ComponentFunc[T any] func(T) templ.Component
 
-type ComponentWriter[T any] struct {
-	w http.ResponseWriter
-	r *http.Request
-	c ComponentFunc[T]
-}
-
 func Component[T any](
 	w http.ResponseWriter,
 	r *http.Request,

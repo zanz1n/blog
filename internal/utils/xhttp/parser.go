@@ -26,43 +26,87 @@ func init() {
 	schemaDecoder.SetAliasTag("json")
 }
 
-func Parse[T any](req *http.Request) (T, error) {
-	value, err := parse[T](req)
-	if err != nil {
-		err = errutils.NewHttp(err, http.StatusBadRequest, 0, true)
-	}
-
-	return value, err
+func IsHtmx(r *http.Request) bool {
+	return r.Header.Get("HX-Request") == "true"
 }
 
-func parse[T any](req *http.Request) (T, error) {
+func Parse[T any](req *http.Request) (T, error) {
 	var value T
 	ct, _, err := mime.ParseMediaType(req.Header.Get("Content-Type"))
 	if err != nil {
-		return value, errors.New("parse request: invalid content type")
+		return value, errutils.NewHttp(
+			errors.New("parse request: invalid content type"),
+			http.StatusBadRequest,
+			http.StatusBadRequest,
+			true,
+		)
 	}
 
 	switch ct {
 	case "application/json":
 		if err = json.NewDecoder(req.Body).Decode(&value); err != nil {
-			return value, fmt.Errorf("parse request: json: %s", err)
+			return value, errutils.NewHttp(
+				fmt.Errorf("parse request: json: %s", err),
+				http.StatusUnprocessableEntity,
+				http.StatusUnprocessableEntity,
+				true,
+			)
 		}
 
 	case "application/x-www-form-urlencoded":
-		if err = req.ParseForm(); err != nil {
-			return value, fmt.Errorf("parse request: form: %s", err)
-		}
-		if err = schemaDecoder.Decode(&value, req.PostForm); err != nil {
-			return value, fmt.Errorf("parse request: form: %s", err)
+		if err = parseFormReq(&value, req); err != nil {
+			return value, errutils.NewHttp(
+				fmt.Errorf("parse request: form: %s", err),
+				http.StatusUnprocessableEntity,
+				http.StatusUnprocessableEntity,
+				true,
+			)
 		}
 
 	default:
-		return value, fmt.Errorf("parse request: invalid content type: %s", ct)
+		return value, errutils.NewHttp(
+			fmt.Errorf("parse request: invalid content type: %s", ct),
+			http.StatusBadRequest,
+			http.StatusBadRequest,
+			true,
+		)
 	}
 
 	if err = validate.Struct(&value); err != nil {
-		return value, err
+		return value, convertValidateError(err)
 	}
 
 	return value, nil
+}
+
+func parseFormReq(dst any, req *http.Request) (err error) {
+	if err = req.ParseForm(); err != nil {
+		return
+	}
+	err = schemaDecoder.Decode(dst, req.PostForm)
+	return
+}
+
+func convertValidateError(err error) error {
+	errs, ok := err.(validator.ValidationErrors)
+	if !ok {
+		return err
+	}
+
+	var b strings.Builder
+
+	for _, err := range errs {
+		b.WriteString(fmt.Sprintf(
+			"Field %s invalid: %s criteria\n",
+			err.Field(),
+			err.Tag(),
+		))
+	}
+
+	return errutils.NewHttpS(
+		b.String(),
+		http.StatusUnprocessableEntity,
+		http.StatusUnprocessableEntity,
+		true,
+	)
 }
