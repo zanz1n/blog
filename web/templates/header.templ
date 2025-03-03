@@ -1,0 +1,139 @@
+package templates
+
+import "github.com/zanz1n/blog/internal/dto"
+import "strings"
+
+templ Header(token *dto.AuthToken) {
+	<div class="navbar bg-base-200 shadow-sm">
+		<div class="navbar-start">
+			<div class="dropdown">
+				<div tabindex="0" role="button" class="btn btn-ghost btn-circle">
+					@svgNavbar()
+				</div>
+				<ul
+					tabindex="0"
+					class="menu menu-sm dropdown-content bg-base-100 rounded-box z-1 mt-3 w-52 p-2 shadow"
+				>
+					<li><a>Homepage</a></li>
+					<li><a>Portfolio</a></li>
+					<li><a>About</a></li>
+				</ul>
+			</div>
+		</div>
+		<div class="navbar-center">
+			<a class="btn btn-ghost text-xl">Blog</a>
+		</div>
+		<div class="navbar-end gap-6">
+			<label class="toggle sm:inline-grid hidden text-base-content">
+				<input id="lightswitch" type="checkbox"/>
+				@svgMoon()
+				@svgSun()
+			</label>
+			if token != nil {
+				<div class="dropdown dropdown-end">
+					// <div tabindex="0" role="button" class="btn btn-ghost btn-circle avatar">
+					// 	<div class="w-10 rounded-full">
+					// 		<img
+					// 			alt={ token.Nickname + " profile image" }
+					// 			src=""
+					// 		/>
+					// 	</div>
+					// </div>
+					<div tabindex="0" role="button" class="btn btn-ghost btn-circle avatar avatar-placeholder">
+						<div class="bg-neutral text-neutral-content w-10 rounded-full">
+							<span>{ initials(token.Name) }</span>
+						</div>
+					</div>
+					<ul
+						tabindex="0"
+						class="menu menu-sm dropdown-content bg-base-100 rounded-box z-1 mt-3 w-52 p-2 shadow"
+					>
+						<li><a href="/profile">Profile</a></li>
+						<li><a href="/profile/settings">Settings</a></li>
+						<li><a href="/auth/logout">Logout</a></li>
+					</ul>
+				</div>
+			} else {
+				<a class="btn btn-outline" href="/auth/login">Login</a>
+			}
+		</div>
+	</div>
+}
+
+templ svgSun() {
+	<svg
+		aria-label="sun"
+		xmlns="http://www.w3.org/2000/svg"
+		viewBox="0 0 24 24"
+	>
+		<g
+			stroke-linejoin="round"
+			stroke-linecap="round"
+			stroke-width="2"
+			fill="none"
+			stroke="currentColor"
+		>
+			<circle cx="12" cy="12" r="4"></circle>
+			<path d="M12 2v2"></path>
+			<path d="M12 20v2"></path>
+			<path d="m4.93 4.93 1.41 1.41"></path>
+			<path d="m17.66 17.66 1.41 1.41"></path>
+			<path d="M2 12h2"></path>
+			<path d="M20 12h2"></path>
+			<path d="m6.34 17.66-1.41 1.41"></path>
+			<path d="m19.07 4.93-1.41 1.41"></path>
+		</g>
+	</svg>
+}
+
+templ svgMoon() {
+	<svg
+		aria-label="moon"
+		xmlns="http://www.w3.org/2000/svg"
+		viewBox="0 0 24 24"
+	>
+		<g
+			stroke-linejoin="round"
+			stroke-linecap="round"
+			stroke-width="2"
+			fill="none"
+			stroke="currentColor"
+		>
+			<path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"></path>
+		</g>
+	</svg>
+}
+
+templ svgNavbar() {
+	<svg
+		xmlns="http://www.w3.org/2000/svg"
+		class="h-5 w-5"
+		fill="none"
+		viewBox="0 0 24 24"
+		stroke="currentColor"
+	>
+		<path
+			stroke-linecap="round"
+			stroke-linejoin="round"
+			stroke-width="2"
+			d="M4 6h16M4 12h16M4 18h7"
+		></path>
+	</svg>
+}
+
+func initials(name string) string {
+	sp := strings.Split(name, " ")
+	if len(sp) == 0 {
+		return "UN"
+	} else if len(sp) == 1 {
+		if len(sp[0]) == 0 {
+			return "UN"
+		}
+		return string([]byte{sp[0][0]})
+	} else {
+		if len(sp[0]) == 0 || len(sp[len(sp)-1]) == 0 {
+			return "UN"
+		}
+		return string([]byte{sp[0][0], sp[len(sp)-1][0]})
+	}
+}

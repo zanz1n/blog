@@ -1,0 +1,178 @@
+package templates
+
+templ LoginForm(err error) {
+	<form
+		class="flex sm:px-6 px-4 py-6 flex-col gap-4 w-full items-center"
+		hx-post="/auth/login"
+		hx-swap="outerHTML"
+		action="/auth/login"
+		method="post"
+	>
+		<h1 class="mb-0 mt-0">Login</h1>
+		if err != nil {
+			<p class="text-error text-center mb-0 mt-0">
+				@templ.Raw(err.Error())
+			</p>
+		} else {
+			<p class="text-error invisible text-center mb-0 mt-0">.</p>
+		}
+		<div class="flex flex-col gap-4 mb-3 w-full">
+			<label class="floating-label">
+				<input
+					class="input validator w-full"
+					type="email"
+					name="email"
+					placeholder="Email"
+					required
+				/>
+				<span>Email</span>
+				<div class="validator-hint hidden">
+					Enter valid email address
+				</div>
+			</label>
+			<label class="floating-label">
+				<input
+					class="input w-full"
+					type="password"
+					name="password"
+					placeholder="Password"
+					required
+				/>
+				<span>Password</span>
+			</label>
+		</div>
+		<div class="flex flex-col gap-4 items-center w-full">
+			<button class="btn btn-primary w-full" type="submit">
+				Sign Up
+			</button>
+			<p class="mt-0 mb-0 text-center">
+				<a class="link" href="/auth/signup">Sign up</a>
+				{ "if" } you don't have an account.
+			</p>
+		</div>
+	</form>
+}
+
+templ login(err error) {
+	<div class="flex flex-col size-full justify-between">
+		@Header(nil)
+		<div class="prose w-full mx-auto flex flex-col items-center content-center">
+			<div class="sm:w-[90%] w-full">
+				@LoginForm(err)
+			</div>
+		</div>
+		<div></div>
+		@Footer()
+	</div>
+}
+
+templ LoginPage(err error) {
+	@Page(login(err), "Login")
+}
+
+templ SignUpForm(err error) {
+	<form
+		class="flex sm:px-6 px-4 py-6 flex-col gap-4 w-full items-center"
+		hx-post="/auth/signup"
+		hx-swap="outerHTML"
+		action="/auth/signup"
+		method="post"
+	>
+		<h1 class="mb-0 mt-0">Sign Up</h1>
+		if err != nil {
+			<p class="text-error text-center mb-0 mt-0">
+				@templ.Raw(err.Error())
+			</p>
+		} else {
+			<p class="text-error invisible text-center mb-0 mt-0">.</p>
+		}
+		<div class="flex flex-col gap-4 mb-3 w-full">
+			<label class="floating-label">
+				<input
+					class="input validator w-full"
+					type="email"
+					name="email"
+					placeholder="Email"
+					required
+				/>
+				<span>Email</span>
+				<div class="validator-hint hidden">
+					Enter valid email address
+				</div>
+			</label>
+			<label class="floating-label">
+				<input
+					class="input validator w-full"
+					type="text"
+					name="nickname"
+					placeholder="Nickname"
+					required
+				/>
+				<span>Nickname</span>
+				<div class="validator-hint hidden">
+					Enter valid nickname
+				</div>
+			</label>
+			<label class="floating-label">
+				<input
+					class="input validator w-full"
+					type="text"
+					name="name"
+					placeholder="Name"
+				/>
+				<span>Name</span>
+				<div class="validator-hint hidden">
+					Enter valid name
+				</div>
+			</label>
+			<label class="floating-label">
+				<input
+					class="input validator w-full"
+					type="password"
+					name="password"
+					placeholder="Password"
+					required
+					minlength="8"
+					pattern="(?=.*\d)(?=.*[a-z])(?=.*[A-Z]).{8,}"
+					title="Must be more than 8 characters, including number, lowercase letter, uppercase letter"
+				/>
+				<span>Password</span>
+				<p class="validator-hint hidden">
+					Must be more than 8 characters, including
+					<br/>
+					At least one number
+					<br/>
+					At least one lowercase letter
+					<br/>
+					At least one uppercase letter
+				</p>
+			</label>
+		</div>
+		<div class="flex flex-col gap-4 items-center w-full">
+			<button class="btn btn-primary w-full" type="submit">
+				Sign Up
+			</button>
+			<p class="mt-0 mb-0 text-center">
+				<a class="link" href="/auth/login">Login</a>
+				{ "if" } you already have an account.
+			</p>
+		</div>
+	</form>
+}
+
+templ signUp(err error) {
+	<div class="flex flex-col size-full justify-between">
+		@Header(nil)
+		<div class="prose w-full mx-auto flex flex-col items-center content-center">
+			<div class="sm:w-[90%] w-full">
+				@SignUpForm(err)
+			</div>
+		</div>
+		<div></div>
+		@Footer()
+	</div>
+}
+
+templ SignUpPage(err error) {
+	@Page(signUp(err), "Sign up")
+}
