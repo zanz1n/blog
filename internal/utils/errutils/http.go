@@ -31,9 +31,13 @@ func (e *httpStatus) Transparent() bool {
 	return e.transparent
 }
 
+func NewHttpS(err string, status int16, code int32, transparent ...bool)HttpError {
+	return NewHttp(errors.New(err), status, code, transparent...)
+}
+
 func NewHttp(err error, status int16, code int32, transparent ...bool) HttpError {
 	if err == nil {
-		err = errors.New("Unknown error")
+		err = errors.New("unknown error")
 		transparent = []bool{true}
 	}
 
@@ -53,16 +57,14 @@ func NewHttp(err error, status int16, code int32, transparent ...bool) HttpError
 func Http(err error) HttpError {
 	if err == nil {
 		return nil
+	} else if err, ok := err.(HttpError); ok {
+		return err
 	}
 
-	if err, ok := err.(HttpError); ok {
-		return err
-	} else {
-		return &httpStatus{
-			code:        0,
-			status:      http.StatusInternalServerError,
-			transparent: false,
-			error:       err,
-		}
+	return &httpStatus{
+		code:        0,
+		status:      http.StatusInternalServerError,
+		transparent: false,
+		error:       err,
 	}
 }

@@ -8,7 +8,17 @@ type ErrorData struct {
 	HttpStatus int    `json:"-"`
 }
 
-templ ErrorTempl(e ErrorData) {
-	<h1>{ strconv.Itoa(e.HttpStatus) }</h1>
-	<p>{ e.Message }</p>
+templ ErrorPage(e ErrorData) {
+	@Page(Error(e), e.Message)
+}
+
+templ Error(e ErrorData) {
+	<div class="prose-xl size-full flex flex-col content-center items-center">
+		<div class="text-center">
+			<h1 class="mt-0 mb-1">
+				<b>{ strconv.Itoa(e.HttpStatus) }</b>
+			</h1>
+			<h2 class="mt-1 mb-0">{ e.Message }</h2>
+		</div>
+	</div>
 }

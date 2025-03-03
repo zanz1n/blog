@@ -26,6 +26,7 @@ import (
 	"github.com/zanz1n/blog/internal/repository"
 	"github.com/zanz1n/blog/internal/server"
 	"github.com/zanz1n/blog/internal/utils"
+	"github.com/zanz1n/blog/internal/utils/xhttp"
 )
 
 var interrupt = make(chan os.Signal, 1)
@@ -89,6 +90,8 @@ func main2() error {
 	if err = wireStaticRoutes(r); err != nil {
 		return err
 	}
+
+	r.NotFound(xhttp.NotFoundHandler)
 
 	server.New(userRepo, authRepo).Wire(r)
 

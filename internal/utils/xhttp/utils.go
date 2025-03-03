@@ -30,5 +30,20 @@ func Error(w http.ResponseWriter, r *http.Request, err error) {
 		data.Message = errd.Error()
 	}
 
-	handler(w, r, templates.ErrorTempl, data, data.HttpStatus, true)
+	handler(w, r, templates.ErrorPage, data, data.HttpStatus, true)
+}
+
+func Redirect(w http.ResponseWriter, r *http.Request, url string, code int) {
+	w.Header().Add("HX-Redirect", url)
+	http.Redirect(w, r, url, code)
+}
+
+func NotFoundHandler(w http.ResponseWriter, r *http.Request) {
+	Error(w, r,
+		errutils.NewHttpS(
+			"Page not found",
+			http.StatusNotFound,
+			http.StatusNotFound,
+			true,
+		))
 }
