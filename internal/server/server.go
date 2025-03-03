@@ -23,7 +23,9 @@ func New(
 	}
 }
 
-func (s *Server) Wire(r chi.Router) {}
+func (s *Server) Wire(r chi.Router) {
+	s.wireAuth(r)
+}
 
 func m(h xhttp.HandlerFunc) http.HandlerFunc {
 	return xhttp.ErrorMiddleware(h)
