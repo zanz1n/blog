@@ -42,7 +42,7 @@ export async function buildJs(dir: string, dev: boolean) {
         packages: "bundle",
         tsconfig: "tsconfig.json",
         legalComments: "eof",
-        splitting: dev,
+        splitting: false,
         minify: !dev,
         target: dev ? "es2022" : "es2017",
         metafile: !dev,
