@@ -10,22 +10,13 @@ import (
 	assert "github.com/stretchr/testify/require"
 	"github.com/zanz1n/blog/internal/dto"
 	"github.com/zanz1n/blog/internal/repository"
-	"github.com/zanz1n/blog/internal/utils"
 )
 
-var articleRepoInstance = utils.NewLazyParam(initArticleRepo)
-
-func initArticleRepo(t *testing.T) (*repository.ArticleRepository, error) {
+func articleRepo(t *testing.T) (*repository.ArticleRepository, *repository.UserRepository) {
 	db := GetDb(t)
 	repo := repository.NewArticleRepository(db)
-	return repo, nil
-}
-
-func articleRepo(t *testing.T) *repository.ArticleRepository {
-	repo, err := articleRepoInstance.Get(t)
-	assert.NoError(t, err)
-
-	return repo
+	userRepo := repository.NewUserRepository(db)
+	return repo, userRepo
 }
 
 func articleIndexing(n int) dto.ArticleIndexing {
@@ -55,7 +46,7 @@ func articleData() dto.ArticleCreateData {
 
 func TestArticleCreate(t *testing.T) {
 	t.Parallel()
-	articles := articleRepo(t)
+	articles, users := articleRepo(t)
 
 	t.Run("Inexistent", func(t *testing.T) {
 		t.Parallel()
@@ -64,7 +55,7 @@ func TestArticleCreate(t *testing.T) {
 		assert.ErrorIs(t, err, repository.ErrArticleNotFound)
 	})
 
-	article, user := createArticle(t)
+	article, user := createArticle(t, articles, users)
 	user.Password = nil
 
 	t.Run("Duplicate", func(t *testing.T) {
@@ -123,7 +114,7 @@ func TestArticleCreate(t *testing.T) {
 
 func TestArticleUpdate(t *testing.T) {
 	t.Parallel()
-	articles := articleRepo(t)
+	articles, users := articleRepo(t)
 
 	t.Run("Inexistent", func(t *testing.T) {
 		t.Parallel()
@@ -139,12 +130,14 @@ func TestArticleUpdate(t *testing.T) {
 		assert.ErrorIs(t, err, repository.ErrArticleNotFound)
 	})
 
-	article, _ := createArticle(t)
+	article, _ := createArticle(t, articles, users)
 
 	time.Sleep(5 * time.Millisecond)
 
 	t.Run("UpdateData", func(t *testing.T) {
 		newData := articleData()
+
+		time.Sleep(5 * time.Millisecond)
 
 		article2, err := articles.UpdateData(
 			context.Background(),
@@ -184,6 +177,8 @@ func TestArticleUpdate(t *testing.T) {
 	t.Run("UpdateContent", func(t *testing.T) {
 		articleIdx, articleContent, _ := articleData2()
 
+		time.Sleep(5 * time.Millisecond)
+
 		article2, err := articles.UpdateContent(
 			context.Background(),
 			article.ID,
@@ -215,7 +210,7 @@ func TestArticleUpdate(t *testing.T) {
 
 func TestArticleDelete(t *testing.T) {
 	t.Parallel()
-	articles := articleRepo(t)
+	articles, users := articleRepo(t)
 
 	t.Run("Inexistent", func(t *testing.T) {
 		t.Parallel()
@@ -224,7 +219,7 @@ func TestArticleDelete(t *testing.T) {
 		assert.ErrorIs(t, err, repository.ErrArticleNotFound)
 	})
 
-	article, _ := createArticle(t)
+	article, _ := createArticle(t, articles, users)
 
 	t.Run("Delete", func(t *testing.T) {
 		article2, err := articles.Delete(context.Background(), article.ID)
@@ -253,7 +248,7 @@ func TestArticleGetMany(t *testing.T) {
 
 	t.Parallel()
 
-	db, err := InitDb(false)
+	db, err := InitDb(t)
 	assert.NoError(t, err)
 
 	userRepo := repository.NewUserRepository(db)
@@ -348,10 +343,11 @@ func sortById(s []dto.Article) {
 	})
 }
 
-func createArticle(t *testing.T) (dto.Article, dto.User) {
-	articles := articleRepo(t)
-	users := userRepo(t)
-
+func createArticle(
+	t *testing.T,
+	articles *repository.ArticleRepository,
+	users *repository.UserRepository,
+) (dto.Article, dto.User) {
 	user, err := dto.NewUser(userData(), dto.PermissionDefault, 4)
 	assert.NoError(t, err)
 

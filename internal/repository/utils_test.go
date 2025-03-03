@@ -2,7 +2,6 @@ package repository_test
 
 import (
 	"context"
-	"crypto/rand"
 	"io"
 	"log"
 	mrand "math/rand/v2"
@@ -25,11 +24,24 @@ import (
 var migrateOnce sync.Once
 
 var lazyDb = utils.NewLazy(func() (*sqlx.DB, error) {
-	return InitDb(true)
+	return InitDb(nil)
 })
 
 func GetDb(t *testing.T) *sqlx.DB {
-	db, err := lazyDb.Get()
+	var (
+		db  *sqlx.DB
+		err error
+	)
+	if !testing.Short() {
+		db, err = lazyDb.Get()
+	} else {
+		db, err = InitDb(t)
+		db.SetMaxOpenConns(1)
+		t.Cleanup(func() {
+			db.Close()
+		})
+	}
+
 	if err != nil {
 		log.Printf("❌ Failed to init database: %s\n", err)
 	}
@@ -38,13 +50,15 @@ func GetDb(t *testing.T) *sqlx.DB {
 	return db
 }
 
-func InitDb(shared bool) (*sqlx.DB, error) {
+func InitDb(t *testing.T) (*sqlx.DB, error) {
+	short := testing.Short()
+
 	driver := "sqlite3"
 	dialect := "sqlite3"
 	mpath := "sqlite"
 	url := "file::memory:"
 
-	if !testing.Short() {
+	if !short {
 		driver = "pgx/v5"
 		dialect = "postgres"
 		mpath = "postgres"
@@ -55,18 +69,20 @@ func InitDb(shared bool) (*sqlx.DB, error) {
 		}
 
 		url = endpoint
-	} else if shared {
-		url += "?cache=shared"
 	}
 
-	log.Printf("✅ Using %s for repository tests\n", dialect)
+	if !short {
+		log.Printf("✅ Using %s for repository tests\n", dialect)
+	}
 
 	db, err := sqlx.Open(driver, url)
 	if err != nil {
 		return nil, err
 	}
 
-	log.Printf("✅ Connected to %s instance\n", dialect)
+	if !short {
+		log.Printf("✅ Connected to %s instance\n", dialect)
+	}
 
 	migrateOnce.Do(func() {
 		err = goose.SetDialect(dialect)
@@ -83,9 +99,10 @@ func InitDb(shared bool) (*sqlx.DB, error) {
 		return nil, err
 	}
 
-	log.Printf("✅ Migrations completed on %s\n", dialect)
-
-	log.Printf("✅ Sucessfully initialized %s\n", dialect)
+	if !short {
+		log.Printf("✅ Migrations completed on %s\n", dialect)
+		log.Printf("✅ Sucessfully initialized %s\n", dialect)
+	}
 
 	return db, err
 }
@@ -121,13 +138,4 @@ func randString(n int) string {
 		b[i] = letterRunes[mrand.IntN(len(letterRunes))]
 	}
 	return string(b)
-}
-
-func randBytes(n int) []byte {
-	b := make([]byte, n)
-	_, err := rand.Read(b)
-	if err != nil {
-		panic(err)
-	}
-	return b
 }

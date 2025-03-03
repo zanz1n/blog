@@ -9,21 +9,12 @@ import (
 	assert "github.com/stretchr/testify/require"
 	"github.com/zanz1n/blog/internal/dto"
 	"github.com/zanz1n/blog/internal/repository"
-	"github.com/zanz1n/blog/internal/utils"
 	"golang.org/x/crypto/bcrypt"
 )
 
-var userRepoInstance = utils.NewLazyParam(initUserRepo)
-
-func initUserRepo(t *testing.T) (*repository.UserRepository, error) {
+func userRepo(t *testing.T) *repository.UserRepository {
 	db := GetDb(t)
 	repo := repository.NewUserRepository(db)
-	return repo, nil
-}
-
-func userRepo(t *testing.T) *repository.UserRepository {
-	repo, err := userRepoInstance.Get(t)
-	assert.NoError(t, err)
 	return repo
 }
 
