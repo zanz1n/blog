@@ -42,6 +42,7 @@ type AuthToken struct {
 	ExpiresAt  jwt.NumericDate `json:"exp"`
 	Issuer     string          `json:"iss"`
 	Nickname   string          `json:"nick"`
+	Name       string          `json:"name"`
 	Email      string          `json:"email"`
 	Permission Permission      `json:"perm"`
 }
@@ -55,6 +56,7 @@ func NewAuthToken(user *User, issuer string, exp time.Duration) AuthToken {
 		ExpiresAt:  jwt.NumericDate{Time: now.Add(exp)},
 		Issuer:     issuer,
 		Nickname:   user.Nickname,
+		Name:       user.Name,
 		Email:      user.Email,
 		Permission: user.Permission,
 	}
