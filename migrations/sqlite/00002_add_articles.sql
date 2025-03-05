@@ -11,6 +11,7 @@ CREATE TABLE articles (
     description text,
     indexing text NOT NULL,
     content text NOT NULL,
+    raw_content text NOT NULL,
 
     FOREIGN KEY (user_id) REFERENCES users(id)
         ON DELETE SET DEFAULT ON UPDATE CASCADE

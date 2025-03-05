@@ -33,8 +33,16 @@ func articleIndexing(n int) dto.ArticleIndexing {
 	return m
 }
 
-func articleData2() (dto.ArticleIndexing, dto.ArticleContent, dto.ArticleCreateData) {
-	return articleIndexing(4), dto.ArticleContent(randString(256)), articleData()
+func articleData2() (
+	dto.ArticleIndexing,
+	dto.ArticleContent,
+	dto.ArticleRawContent,
+	dto.ArticleCreateData,
+) {
+	return articleIndexing(4),
+		dto.ArticleContent(randString(256)),
+		[]byte(randString(256)),
+		articleData()
 }
 
 func articleData() dto.ArticleCreateData {
@@ -71,9 +79,11 @@ func TestArticleCreate(t *testing.T) {
 		assert.Nil(t, article2.User)
 		assert.Nil(t, article2.Indexing)
 		assert.Nil(t, article2.Content)
+		assert.Nil(t, article2.RawContent)
 
 		article2.Indexing = article.Indexing
 		article2.Content = article.Content
+		article2.RawContent = article.RawContent
 
 		assert.Equal(t, article, article2)
 	})
@@ -85,10 +95,12 @@ func TestArticleCreate(t *testing.T) {
 		assert.Equal(t, &user, article2.User)
 		assert.Nil(t, article2.Indexing)
 		assert.Nil(t, article2.Content)
+		assert.Nil(t, article2.RawContent)
 
 		article2.User = nil
 		article2.Indexing = article.Indexing
 		article2.Content = article.Content
+		article2.RawContent = article.RawContent
 
 		assert.Equal(t, article, article2)
 	})
@@ -98,12 +110,33 @@ func TestArticleCreate(t *testing.T) {
 		assert.NoError(t, err)
 
 		assert.Nil(t, article2.User)
+		assert.Nil(t, article2.RawContent)
+
+		article2.RawContent = article.RawContent
+
+		assert.Equal(t, article, article2)
+	})
+
+	t.Run("GetWithRawContent", func(t *testing.T) {
+		article2, err := articles.GetWithRawContent(context.Background(), article.ID)
+		assert.NoError(t, err)
+
+		assert.Nil(t, article2.User)
+		assert.Nil(t, article2.Indexing)
+		assert.Nil(t, article2.Content)
+
+		article2.Indexing = article.Indexing
+		article2.Content = article.Content
+
 		assert.Equal(t, article, article2)
 	})
 
 	t.Run("GetFull", func(t *testing.T) {
 		article2, err := articles.GetFull(context.Background(), article.ID)
 		assert.NoError(t, err)
+
+		assert.Nil(t, article2.RawContent)
+		article2.RawContent = article.RawContent
 
 		assert.Equal(t, &user, article2.User)
 		article2.User = nil
@@ -165,17 +198,24 @@ func TestArticleUpdate(t *testing.T) {
 		assert.Nil(t, article2.Content)
 		article2.Content = article.Content
 
+		assert.Nil(t, article2.RawContent)
+		article2.RawContent = article.RawContent
+
 		assert.Equal(t, article, article2)
 	})
 
 	t.Run("Fetch1", func(t *testing.T) {
 		article2, err := articles.GetWithContent(context.Background(), article.ID)
 		assert.NoError(t, err)
+
+		assert.Nil(t, article2.RawContent)
+		article2.RawContent = article.RawContent
+
 		assert.Equal(t, article, article2)
 	})
 
 	t.Run("UpdateContent", func(t *testing.T) {
-		articleIdx, articleContent, _ := articleData2()
+		articleIdx, articleContent, rawContent, _ := articleData2()
 
 		time.Sleep(5 * time.Millisecond)
 
@@ -184,11 +224,13 @@ func TestArticleUpdate(t *testing.T) {
 			article.ID,
 			articleIdx,
 			articleContent,
+			rawContent,
 		)
 		assert.NoError(t, err)
 
 		article2.Indexing = articleIdx
 		article2.Content = articleContent
+		article2.RawContent = rawContent
 
 		assert.Greater(t,
 			article2.UpdatedAt.UnixMilli(),
@@ -197,12 +239,30 @@ func TestArticleUpdate(t *testing.T) {
 		article.UpdatedAt = article2.UpdatedAt
 		article.Indexing = articleIdx
 		article.Content = articleContent
+		article.RawContent = rawContent
 
 		assert.Equal(t, article, article2)
 	})
 
 	t.Run("Fetch2", func(t *testing.T) {
+		article2, err := articles.GetWithRawContent(context.Background(), article.ID)
+		assert.NoError(t, err)
+
+		assert.Nil(t, article2.Indexing)
+		article2.Indexing = article.Indexing
+
+		assert.Nil(t, article2.Content)
+		article2.Content = article.Content
+
+		assert.Equal(t, article, article2)
+	})
+
+	t.Run("Fetch3", func(t *testing.T) {
 		article2, err := articles.GetWithContent(context.Background(), article.ID)
+
+		assert.Nil(t, article2.RawContent)
+		article2.RawContent = article.RawContent
+
 		assert.NoError(t, err)
 		assert.Equal(t, article, article2)
 	})
@@ -376,8 +436,8 @@ func createArticle(
 		assert.NoError(t, err)
 	}))
 
-	articleIdx, articleContent, data := articleData2()
-	article := dto.NewArticle(user.ID, articleIdx, articleContent, data)
+	articleIdx, articleContent, rawContent, data := articleData2()
+	article := dto.NewArticle(user.ID, articleIdx, articleContent, rawContent, data)
 
 	assert.Equal(t, article.Content, articleContent)
 	assert.Equal(t, articleIdx, article.Indexing)

@@ -6,11 +6,13 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"math"
 	"net/http"
 	"time"
 
 	"github.com/jmoiron/sqlx"
 	"github.com/zanz1n/blog/internal/dto"
+	"github.com/zanz1n/blog/internal/utils"
 	"github.com/zanz1n/blog/internal/utils/errutils"
 )
 
@@ -66,6 +68,7 @@ func (r *ArticleRepository) Create(ctx context.Context, article dto.Article) err
 		description2,
 		article.Indexing,
 		article.Content,
+		utils.UnsafeString(article.RawContent),
 	)
 	if err != nil {
 		if isUniqueConstraintViolation(err) {
@@ -93,6 +96,13 @@ func (r *ArticleRepository) GetWithContent(
 	id dto.Snowflake,
 ) (dto.Article, error) {
 	return r.getAny(ctx, id, "GetWithContent")
+}
+
+func (r *ArticleRepository) GetWithRawContent(
+	ctx context.Context,
+	id dto.Snowflake,
+) (dto.Article, error) {
+	return r.getAny(ctx, id, "GetWithRawContent")
 }
 
 func (r *ArticleRepository) GetFull(ctx context.Context, id dto.Snowflake) (dto.Article, error) {
@@ -193,6 +203,7 @@ func (r *ArticleRepository) UpdateContent(
 	id dto.Snowflake,
 	idx dto.ArticleIndexing,
 	content dto.ArticleContent,
+	rawContent dto.ArticleRawContent,
 ) (dto.Article, error) {
 	now := time.Now().UnixMilli()
 
@@ -203,7 +214,7 @@ func (r *ArticleRepository) UpdateContent(
 		return article, err
 	}
 
-	err = sttm.GetContext(ctx, &article, idx, content, now, id)
+	err = sttm.GetContext(ctx, &article, idx, content, rawContent, now, id)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			err = ErrArticleNotFound

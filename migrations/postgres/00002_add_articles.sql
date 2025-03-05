@@ -10,7 +10,8 @@ CREATE TABLE articles (
     title text NOT NULL,
     description text,
     indexing jsonb NOT NULL,
-    content text NOT NULL
+    content text NOT NULL,
+    raw_content text NOT NULL
 );
 
 ALTER TABLE articles ADD CONSTRAINT articles_user_id_fkey

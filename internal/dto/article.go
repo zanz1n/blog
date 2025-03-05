@@ -38,6 +38,8 @@ type Article struct {
 	Indexing ArticleIndexing `db:"indexing" json:"indexing,omitempty"`
 	// Can be empty if not fetched with content
 	Content ArticleContent `db:"content" json:"content,omitempty"`
+
+	RawContent ArticleRawContent `db:"raw_content" json:"raw_content,omitempty"`
 }
 
 type ArticleCreateData struct {
@@ -49,6 +51,7 @@ func NewArticle(
 	userId Snowflake,
 	idx ArticleIndexing,
 	content ArticleContent,
+	rawContent ArticleRawContent,
 	data ArticleCreateData,
 ) Article {
 	now := Timestamp{time.Now().Round(time.Millisecond)}
@@ -64,6 +67,7 @@ func NewArticle(
 		Description: data.Description,
 		Indexing:    idx,
 		Content:     content,
+		RawContent:  rawContent,
 	}
 }
 
@@ -150,6 +154,36 @@ func (c *ArticleContent) Scan(src any) error {
 
 // Value implements driver.Valuer.
 func (c ArticleContent) Value() (driver.Value, error) {
+	return utils.UnsafeString(c), nil
+}
+
+var (
+	_nullRawArticleContent = ArticleRawContent(nil)
+
+	_ sql.Scanner   = &_nullRawArticleContent
+	_ driver.Valuer = _nullRawArticleContent
+)
+
+type ArticleRawContent []byte
+
+// Scan implements sql.Scanner.
+func (c *ArticleRawContent) Scan(src any) error {
+	switch src := src.(type) {
+	case []byte:
+		*c = src
+	case string:
+		*c = utils.UnsafeBytes(src)
+	case nil:
+		*c = nil
+	default:
+		return fmt.Errorf("Scan: unable to scan type %T into ArticleRawContent", src)
+	}
+
+	return nil
+}
+
+// Value implements driver.Valuer.
+func (c ArticleRawContent) Value() (driver.Value, error) {
 	return utils.UnsafeString(c), nil
 }
 
