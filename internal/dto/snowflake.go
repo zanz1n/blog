@@ -3,6 +3,7 @@ package dto
 import (
 	"database/sql"
 	"database/sql/driver"
+	"encoding"
 	"encoding/binary"
 	"errors"
 	"fmt"
@@ -25,6 +26,9 @@ var (
 	_ sql.Scanner   = &_nullSnowflake
 	_ driver.Valuer = _nullSnowflake
 	_ fmt.Stringer  = _nullSnowflake
+
+	_ encoding.TextMarshaler   = _nullSnowflake
+	_ encoding.TextUnmarshaler = &_nullSnowflake
 )
 
 type Snowflake uint64
@@ -108,6 +112,22 @@ func (s Snowflake) String() string {
 // Value implements driver.Valuer.
 func (s Snowflake) Value() (driver.Value, error) {
 	return int64(s), nil
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s Snowflake) MarshalText() (text []byte, err error) {
+	return utils.UnsafeBytes(s.String()), nil
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *Snowflake) UnmarshalText(text []byte) error {
+	v, err := strconv.ParseUint(utils.UnsafeString(text), 10, 0)
+	if err != nil {
+		return err
+	}
+
+	*s = Snowflake(v)
+	return nil
 }
 
 func snowflakeScanErr(src any) error {

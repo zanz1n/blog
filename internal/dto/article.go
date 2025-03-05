@@ -24,10 +24,10 @@ const (
 )
 
 type Article struct {
-	ID          Snowflake `db:"id" json:"id,string"`
+	ID          Snowflake `db:"id" json:"id"`
 	CreatedAt   Timestamp `db:"created_at" json:"created_at"`
 	UpdatedAt   Timestamp `db:"updated_at" json:"updated_at"`
-	UserID      Snowflake `db:"user_id" json:"user_id,string"`
+	UserID      Snowflake `db:"user_id" json:"user_id"`
 	Title       string    `db:"title" json:"title"`
 	Description string    `db:"description" json:"description"`
 

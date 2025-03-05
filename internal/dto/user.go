@@ -10,7 +10,7 @@ import (
 )
 
 type User struct {
-	ID         Snowflake  `db:"id" json:"id,string"`
+	ID         Snowflake  `db:"id" json:"id"`
 	CreatedAt  Timestamp  `db:"created_at" json:"created_at"`
 	UpdatedAt  Timestamp  `db:"updated_at" json:"updated_at"`
 	Permission Permission `db:"permission" json:"-"`
