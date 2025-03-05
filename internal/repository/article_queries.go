@@ -53,12 +53,29 @@ WHERE articles.id = $1
 `
 
 const articleGetMany = `SELECT
-id, created_at, updated_at, user_id, title, description
-FROM articles ORDER BY id ASC LIMIT $1 OFFSET $2`
+articles.id "articles.id",
+articles.created_at "articles.created_at",
+articles.updated_at "articles.updated_at",
+articles.user_id "articles.user_id",
+articles.title "articles.title",
+articles.description "articles.description",
+users.id "users.id",
+users.created_at "users.created_at",
+users.updated_at "users.updated_at",
+users.permission "users.permission",
+users.email "users.email",
+users.nickname "users.nickname",
+users.name "users.name"
+FROM articles
+INNER JOIN users ON articles.user_id = users.id
+WHERE articles.id < $1
+ORDER BY articles.id DESC LIMIT $2`
 
 const articleGetManyByUser = `SELECT
 id, created_at, updated_at, user_id, title, description
-FROM articles WHERE user_id = $1 ORDER BY id ASC LIMIT $2 OFFSET $3`
+FROM articles
+WHERE user_id = $1 AND id < $2
+ORDER BY id DESC LIMIT $3`
 
 const articleUpdateDataQuery = `UPDATE articles
 SET title = $1, description = $2, updated_at = $3 WHERE id = $4

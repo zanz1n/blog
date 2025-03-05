@@ -267,14 +267,16 @@ func TestArticleGetMany(t *testing.T) {
 
 		for i := 0; i < Count; i++ {
 			data := articleData()
-			article := dto.NewArticle(user.ID, nil, nil, data)
+			article := dto.NewArticle(user.ID, nil, nil, nil, data)
 
-			articles[(u*Count)+i] = article
 			articlesByUser[u] = append(articlesByUser[u], article)
+			article.User = &user
+			article.User.Password = nil
+			articles[(u*Count)+i] = article
 		}
-		sortById(articlesByUser[u])
+		sortByIdReverse(articlesByUser[u])
 	}
-	sortById(articles)
+	sortByIdReverse(articles)
 
 	assert.True(t, t.Run("CreateUsers", func(t *testing.T) {
 		for _, user := range users {
@@ -293,17 +295,26 @@ func TestArticleGetMany(t *testing.T) {
 	t.Run("GetMany", func(t *testing.T) {
 		result := []dto.Article{}
 
-		for i := 0; i < (UserCount*Count/PageSize)+1; i++ {
+		for {
+			lastSeen := dto.Snowflake(0)
+			if len(result) != 0 {
+				lastSeen = result[len(result)-1].ID
+			}
+
 			articles, err := articleRepo.GetMany(
 				context.Background(),
 				dto.Pagination{
-					Limit:  PageSize,
-					Offset: i * PageSize,
+					Limit:    PageSize,
+					LastSeen: lastSeen,
 				},
 			)
 			assert.NoError(t, err)
 
 			result = append(result, articles...)
+
+			if len(articles) < PageSize {
+				break
+			}
 		}
 
 		assert.Equal(t, articles, result)
@@ -313,18 +324,27 @@ func TestArticleGetMany(t *testing.T) {
 		for u := 0; u < UserCount; u++ {
 			result := []dto.Article{}
 
-			for i := 0; i < (Count/PageSize)+1; i++ {
+			for {
+				lastSeen := dto.Snowflake(0)
+				if len(result) != 0 {
+					lastSeen = result[len(result)-1].ID
+				}
+
 				articles, err := articleRepo.GetManyByUser(
 					context.Background(),
 					users[u].ID,
 					dto.Pagination{
-						Limit:  PageSize,
-						Offset: i * PageSize,
+						Limit:    PageSize,
+						LastSeen: lastSeen,
 					},
 				)
 				assert.NoError(t, err)
 
 				result = append(result, articles...)
+
+				if len(articles) < PageSize {
+					break
+				}
 			}
 
 			assert.Equal(t, articlesByUser[u], result)
@@ -332,12 +352,12 @@ func TestArticleGetMany(t *testing.T) {
 	})
 }
 
-func sortById(s []dto.Article) {
+func sortByIdReverse(s []dto.Article) {
 	slices.SortFunc(s, func(a, b dto.Article) int {
 		if b.ID > a.ID {
-			return -1
-		} else if a.ID > b.ID {
 			return 1
+		} else if a.ID > b.ID {
+			return -1
 		}
 		return 0
 	})

@@ -103,17 +103,38 @@ func (r *ArticleRepository) GetMany(
 	ctx context.Context,
 	pag dto.Pagination,
 ) ([]dto.Article, error) {
-	var articles []dto.Article
+	if pag.LastSeen == 0 {
+		// math.MaxUint64 results int integer overflow
+		pag.LastSeen = math.MaxInt64
+	}
 
 	sttm, err := r.q.GetMany()
 	if err != nil {
-		return articles, err
+		return nil, err
 	}
 
-	err = sttm.SelectContext(ctx, &articles, pag.Limit, pag.Offset)
+	rows, err := sttm.QueryxContext(ctx, pag.LastSeen, pag.Limit)
 	if err != nil {
 		slog.Error("ArticleRepository: GetMany: sql error", "error", err)
 	}
+	defer rows.Close()
+
+	articles := []dto.Article{}
+
+	for rows.Next() {
+		var res struct {
+			Article dto.Article `db:"articles"`
+			User    dto.User    `db:"users"`
+		}
+
+		if err = rows.StructScan(&res); err != nil {
+			return nil, err
+		}
+
+		res.Article.User = &res.User
+		articles = append(articles, res.Article)
+	}
+
 	return articles, err
 }
 
@@ -122,14 +143,19 @@ func (r *ArticleRepository) GetManyByUser(
 	userId dto.Snowflake,
 	pag dto.Pagination,
 ) ([]dto.Article, error) {
-	var articles []dto.Article
+	if pag.LastSeen == 0 {
+		// math.MaxUint64 results int integer overflow
+		pag.LastSeen = math.MaxInt64
+	}
 
 	sttm, err := r.q.GetManyByUser()
 	if err != nil {
 		return nil, err
 	}
 
-	err = sttm.SelectContext(ctx, &articles, userId, pag.Limit, pag.Offset)
+	var articles []dto.Article
+
+	err = sttm.SelectContext(ctx, &articles, userId, pag.LastSeen, pag.Limit)
 	if err != nil {
 		slog.Error("ArticleRepository: GetManyByUser: sql error", "error", err)
 	}
