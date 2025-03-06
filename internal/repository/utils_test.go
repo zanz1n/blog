@@ -113,7 +113,7 @@ func launchPostgresCt() (string, error) {
 
 	container, err := postgres.Run(
 		ctx,
-		"postgres:17",
+		"postgres:17-alpine",
 		postgres.WithDatabase(randString(10)),
 		postgres.WithUsername(randString(10)),
 		postgres.WithPassword(randString(128)),

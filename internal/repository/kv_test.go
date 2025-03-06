@@ -24,7 +24,7 @@ func kvRepo(t *testing.T) repository.KVStorer {
 		return repository.NewSqlKV(db)
 	}
 
-	valkeyCt, err := valkeyct.Run(context.Background(), "valkey/valkey:7.2.5")
+	valkeyCt, err := valkeyct.Run(context.Background(), "valkey/valkey:8-alpine")
 	assert.NoError(t, err)
 
 	valkeyCStr, err := valkeyCt.ConnectionString(context.Background())
