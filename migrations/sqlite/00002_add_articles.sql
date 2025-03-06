@@ -15,7 +15,7 @@ CREATE TABLE articles (
 
     FOREIGN KEY (user_id) REFERENCES users(id)
         ON DELETE SET DEFAULT ON UPDATE CASCADE
-);
+) STRICT;
 
 CREATE INDEX articles_user_id_idx ON articles(user_id);
 -- +goose StatementEnd
