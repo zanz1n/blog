@@ -1,8 +1,11 @@
 package repository_test
 
 import (
+	"context"
 	"crypto/ed25519"
 	"crypto/rand"
+	"encoding/base64"
+	mrand "math/rand/v2"
 	"testing"
 	"time"
 
@@ -14,11 +17,11 @@ import (
 
 const issuer = "SRV"
 
-func authRepository(t *testing.T) *repository.AuthRepository {
+func authRepository(t *testing.T, kv repository.KVStorer) *repository.AuthRepository {
 	pub, priv, err := ed25519.GenerateKey(rand.Reader)
 	assert.NoError(t, err)
 
-	return repository.NewAuthRepository(priv, pub, issuer)
+	return repository.NewAuthRepository(priv, pub, issuer, kv)
 }
 
 func newUser(t *testing.T) dto.User {
@@ -28,9 +31,48 @@ func newUser(t *testing.T) dto.User {
 	return user
 }
 
-func TestJwt(t *testing.T) {
+func TestAuthRefreshToken(t *testing.T) {
 	t.Parallel()
-	repo := authRepository(t)
+	repo := authRepository(t, kvRepo(t))
+
+	t.Run("Fuzz", func(t *testing.T) {
+		t.Parallel()
+
+		for i := range 32 {
+			var token string
+			if i%2 == 0 {
+				token = randString(mrand.IntN(128))
+			} else {
+				token = base64.StdEncoding.EncodeToString(
+					randBytes(repository.RefreshTokenLen),
+				)
+			}
+
+			err := repo.ValidateRefreshToken(context.Background(), token)
+			assert.Error(t, err)
+			assert.ErrorIs(t, err, repository.ErrInvalidRefreshToken)
+		}
+	})
+
+	userId := dto.NewSnowflake()
+
+	token, err := repo.GenRefreshToken(context.Background(), userId)
+	assert.NoError(t, err)
+
+	err = repo.ValidateRefreshToken(context.Background(), token)
+	assert.NoError(t, err)
+
+	err = repo.DeleteRefreshTokens(context.Background(), userId)
+	assert.NoError(t, err)
+
+	err = repo.ValidateRefreshToken(context.Background(), token)
+	assert.Error(t, err)
+	assert.ErrorIs(t, err, repository.ErrInvalidRefreshToken)
+}
+
+func TestAuthJwt(t *testing.T) {
+	t.Parallel()
+	repo := authRepository(t, nil)
 
 	user := newUser(t)
 	data := dto.NewAuthToken(&user, issuer, time.Second)
@@ -57,7 +99,7 @@ func TestJwt(t *testing.T) {
 
 	t.Run("DecodeWrongKey", func(t *testing.T) {
 		// t.Parallel()
-		repo2 := authRepository(t)
+		repo2 := authRepository(t, nil)
 		_, err = repo2.DecodeToken(token)
 		assert.Error(t, err)
 		assert.ErrorIs(t, err, repository.ErrInvalidAuthToken)
@@ -71,20 +113,19 @@ func TestJwt(t *testing.T) {
 	})
 }
 
-func TestJwtIssuer(t *testing.T) {
+func TestAuthJwtIssuer(t *testing.T) {
 	t.Parallel()
-	assert := assert.New(t)
-	repo := authRepository(t)
+	repo := authRepository(t, nil)
 
 	user := newUser(t)
 	data := dto.NewAuthToken(&user, "", time.Hour)
 
 	token, err := repo.EncodeToken(data)
-	assert.NoError(err)
+	assert.NoError(t, err)
 
 	data2, err := repo.DecodeToken(token)
-	assert.NoError(err)
+	assert.NoError(t, err)
 
 	data.Issuer = issuer
-	assert.Equal(data, data2)
+	assert.Equal(t, data, data2)
 }
