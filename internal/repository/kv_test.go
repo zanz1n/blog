@@ -13,8 +13,15 @@ import (
 
 func kvRepo(t *testing.T) repository.KVStorer {
 	if testing.Short() {
-		t.Skip()
-		return nil
+		db, err := InitDb(t)
+		assert.NoError(t, err)
+
+		db.SetMaxOpenConns(1)
+		t.Cleanup(func() {
+			db.Close()
+		})
+
+		return repository.NewSqlKV(db)
 	}
 
 	valkeyCt, err := valkeyct.Run(context.Background(), "valkey/valkey:7.2.5")
@@ -97,6 +104,10 @@ func TestKv(t *testing.T) {
 		assert.Equal(t, value, value2)
 
 		time.Sleep(2 * time.Second)
+
+		exists, err := repo.Exists(context.Background(), key)
+		assert.NoError(t, err)
+		assert.False(t, exists)
 
 		_, err = repo.Get(context.Background(), key)
 		assert.Error(t, err)
