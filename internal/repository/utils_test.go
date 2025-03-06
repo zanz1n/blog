@@ -84,15 +84,7 @@ func InitDb(t *testing.T) (*sqlx.DB, error) {
 		log.Printf("✅ Connected to %s instance\n", dialect)
 	}
 
-	migrateOnce.Do(func() {
-		err = goose.SetDialect(dialect)
-		if err != nil {
-			panic(err)
-		}
-
-		goose.SetBaseFS(migrations.EmbedMigrations)
-		goose.SetLogger(log.New(io.Discard, "", log.Flags()))
-	})
+	gooseSetup(dialect)
 
 	err = goose.Up(db.DB, mpath)
 	if err != nil {
@@ -105,6 +97,18 @@ func InitDb(t *testing.T) (*sqlx.DB, error) {
 	}
 
 	return db, err
+}
+
+func gooseSetup(dialect string) {
+	migrateOnce.Do(func() {
+		err := goose.SetDialect(dialect)
+		if err != nil {
+			panic(err)
+		}
+
+		goose.SetBaseFS(migrations.EmbedMigrations)
+		goose.SetLogger(log.New(io.Discard, "", log.Flags()))
+	})
 }
 
 func launchPostgresCt() (string, error) {
