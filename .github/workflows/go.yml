@@ -54,6 +54,7 @@ jobs:
           GOARCH: ${{ matrix.goarch }}
           CGO_ENABLED: 1
         run: |
+          echo "{}" > web/.source-map.json
           make DEBUG=1 build-server
 
       - name: Test
