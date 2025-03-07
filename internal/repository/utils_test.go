@@ -64,11 +64,14 @@ func InitDb(t *testing.T) (*sqlx.DB, error) {
 		dialect = "postgres"
 		mpath = "postgres"
 
-		endpoint, err := launchPostgresCt()
+		container, endpoint, err := launchPostgresCt()
 		if err != nil {
 			return nil, err
 		}
 
+		if t != nil {
+			testcontainers.CleanupContainer(t, container)
+		}
 		url = endpoint
 	}
 
@@ -112,7 +115,7 @@ func gooseSetup(dialect string) {
 	})
 }
 
-func launchPostgresCt() (string, error) {
+func launchPostgresCt() (testcontainers.Container, string, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
 	defer cancel()
 
@@ -129,10 +132,11 @@ func launchPostgresCt() (string, error) {
 	)
 
 	if err != nil {
-		return "", err
+		return nil, "", err
 	}
 
-	return container.ConnectionString(ctx, "sslmode=disable")
+	cs, err := container.ConnectionString(ctx, "sslmode=disable")
+	return container, cs, err
 }
 
 var letterRunes = []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")

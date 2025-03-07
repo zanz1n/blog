@@ -6,6 +6,7 @@ import (
 	"time"
 
 	assert "github.com/stretchr/testify/require"
+	"github.com/testcontainers/testcontainers-go"
 	valkeyct "github.com/testcontainers/testcontainers-go/modules/valkey"
 	"github.com/valkey-io/valkey-go"
 	"github.com/zanz1n/blog/internal/repository"
@@ -26,6 +27,8 @@ func kvRepo(t *testing.T) repository.KVStorer {
 
 	valkeyCt, err := valkeyct.Run(context.Background(), "valkey/valkey:8-alpine")
 	assert.NoError(t, err)
+
+	testcontainers.CleanupContainer(t, valkeyCt)
 
 	valkeyCStr, err := valkeyCt.ConnectionString(context.Background())
 	assert.NoError(t, err)
