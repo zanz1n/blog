@@ -11,6 +11,8 @@ import (
 
 	"github.com/jmoiron/sqlx"
 	"github.com/pressly/goose/v3"
+	"github.com/valkey-io/valkey-go"
+	"github.com/zanz1n/blog/internal/repository"
 	"github.com/zanz1n/blog/internal/utils"
 	"github.com/zanz1n/blog/migrations"
 )
@@ -20,6 +22,26 @@ var migrateOpt = flag.Bool(
 	false,
 	"executes database migrations before running the server",
 )
+
+func kvconnect(db *sqlx.DB) (repository.KVStorer, error) {
+	redisUrl := os.Getenv("REDIS_URL")
+
+	if redisUrl == "" {
+		return repository.NewSqlKV(db), nil
+	}
+
+	url, err := valkey.ParseURL(redisUrl)
+	if err != nil {
+		return nil, err
+	}
+
+	client, err := valkey.NewClient(url)
+	if err != nil {
+		return nil, err
+	}
+
+	return repository.NewRedisKV(client), nil
+}
 
 func dbconnect() (db *sqlx.DB, err error) {
 	dbUrl := os.Getenv("DATABASE_URL")

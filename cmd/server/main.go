@@ -61,6 +61,11 @@ func main2() error {
 	}
 	defer db.Close()
 
+	kv, err := kvconnect(db)
+	if err != nil {
+		return err
+	}
+
 	userRepo := repository.NewUserRepository(db)
 	defer userRepo.Close()
 
@@ -69,7 +74,7 @@ func main2() error {
 		return err
 	}
 
-	authRepo := repository.NewAuthRepository(priv, pub, "SRV")
+	authRepo := repository.NewAuthRepository(priv, pub, "SRV", kv)
 
 	r := chi.NewRouter()
 	r.Use(cors.Handler(cors.Options{
