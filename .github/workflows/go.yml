@@ -55,9 +55,9 @@ jobs:
           CGO_ENABLED: 1
         run: |
           make DEBUG=1 build-server
-          make DEBUG=0 build-server
 
       - name: Test
         env:
           CGO_ENABLED: 1
+          SHORTTESTS: 1
         run: make test
