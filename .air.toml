@@ -3,7 +3,7 @@ testdata_dir = "testdata"
 tmp_dir = "tmp"
 
 [build]
-full_bin = "LISTEN_ADDR=:8080 ./tmp/server"
+full_bin = "LISTEN_ADDR=:8080 ./tmp/server --migrate"
 cmd = "make OUTPUT=./tmp/server DEBUG=1 build-server"
 args_bin = []
 delay = 0
