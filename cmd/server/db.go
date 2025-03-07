@@ -27,8 +27,13 @@ func kvconnect(db *sqlx.DB) (repository.KVStorer, error) {
 	redisUrl := os.Getenv("REDIS_URL")
 
 	if redisUrl == "" {
+		slog.Info(
+			fmt.Sprintf("KeyValue: Using %s instance", db.DriverName()),
+		)
 		return repository.NewSqlKV(db), nil
 	}
+
+	start := time.Now()
 
 	url, err := valkey.ParseURL(redisUrl)
 	if err != nil {
@@ -40,11 +45,20 @@ func kvconnect(db *sqlx.DB) (repository.KVStorer, error) {
 		return nil, err
 	}
 
-	return repository.NewRedisKV(client), nil
+	repo := repository.NewRedisKV(client)
+
+	slog.Info(
+		"KeyValue: Connected to redis",
+		utils.TookAttr(start, time.Microsecond),
+	)
+
+	return repo, nil
 }
 
 func dbconnect() (db *sqlx.DB, err error) {
 	dbUrl := os.Getenv("DATABASE_URL")
+
+	start := time.Now()
 
 	var scheme string
 	if strings.HasPrefix(dbUrl, "file:") {
@@ -73,6 +87,11 @@ func dbconnect() (db *sqlx.DB, err error) {
 		}
 	}
 
+	slog.Info(
+		fmt.Sprintf("Database: Connected to %s", scheme),
+		utils.TookAttr(start, time.Microsecond),
+	)
+
 	return
 }
 
@@ -83,7 +102,7 @@ func migrate(db *sql.DB, dialect string) error {
 	}
 
 	logger := slog.NewLogLogger(slog.Default().Handler(), slog.LevelInfo)
-	logger.SetPrefix("Migrations: ")
+	logger.SetPrefix("Database: ")
 
 	goose.SetBaseFS(migrations.EmbedMigrations)
 	goose.SetLogger(logger)
@@ -94,7 +113,7 @@ func migrate(db *sql.DB, dialect string) error {
 	}
 
 	slog.Info(
-		"Migrations: Executed migrations",
+		"Database: Executed migrations",
 		utils.TookAttr(start, time.Microsecond),
 	)
 	return nil

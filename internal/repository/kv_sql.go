@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"errors"
+	"log/slog"
 	"time"
 
 	"github.com/jmoiron/sqlx"
@@ -34,6 +35,9 @@ func (r *SqlKV) Exists(ctx context.Context, key string) (bool, error) {
 
 	var ct int
 	err = sttm.QueryRowContext(ctx, key, now).Scan(&ct)
+	if err != nil {
+		slog.Error("SqlKV: Exists: sql error", "error", err)
+	}
 
 	return ct == 1, err
 }
@@ -52,6 +56,8 @@ func (r *SqlKV) Get(ctx context.Context, key string) (string, error) {
 
 	if errors.Is(err, sql.ErrNoRows) {
 		err = ErrValueNotFound
+	} else {
+		slog.Error("SqlKV: Get: sql error", "error", err)
 	}
 
 	return value, err
@@ -76,6 +82,8 @@ func (r *SqlKV) GetEx(
 
 	if errors.Is(err, sql.ErrNoRows) {
 		err = ErrValueNotFound
+	} else {
+		slog.Error("SqlKV: GetEx: sql error", "error", err)
 	}
 
 	return value, err
@@ -114,6 +122,9 @@ func (r *SqlKV) Set(ctx context.Context, key string, value string) error {
 	}
 
 	_, err = sttm.ExecContext(ctx, key, value, nil)
+	if err != nil {
+		slog.Error("SqlKV: Set: sql error", "error", err)
+	}
 	return err
 }
 
@@ -131,6 +142,9 @@ func (r *SqlKV) SetEx(
 
 	exp := time.Now().Add(ttl).Unix()
 	_, err = sttm.ExecContext(ctx, key, value, exp)
+	if err != nil {
+		slog.Error("SqlKV: SetEx: sql error", "error", err)
+	}
 	return err
 }
 
@@ -169,11 +183,13 @@ func (r *SqlKV) Delete(ctx context.Context, key string) error {
 	now := time.Now().Unix()
 	res, err := sttm.ExecContext(ctx, key, now)
 	if err != nil {
+		slog.Error("SqlKV: Delete: sql error", "error", err)
 		return err
 	}
 
 	rows, err := res.RowsAffected()
 	if err != nil {
+		slog.Error("SqlKV: Delete: sql error", "error", err)
 		return err
 	}
 
@@ -195,5 +211,8 @@ func (r *SqlKV) Cleanup(ctx context.Context) error {
 
 	now := time.Now().Unix()
 	_, err = sttm.ExecContext(ctx, now)
+	if err != nil {
+		slog.Error("SqlKV: Cleanup: sql error", "error", err)
+	}
 	return err
 }

@@ -3,6 +3,7 @@ package repository
 import (
 	"context"
 	"encoding/json"
+	"log/slog"
 	"time"
 
 	"github.com/valkey-io/valkey-go"
@@ -22,7 +23,12 @@ func NewRedisKV(client valkey.Client) *RedisKV {
 // Exists implements KVStorer.
 func (r *RedisKV) Exists(ctx context.Context, key string) (bool, error) {
 	cmd := r.c.B().Exists().Key(key).Build()
-	return r.c.Do(ctx, cmd).AsBool()
+	v, err := r.c.Do(ctx, cmd).AsBool()
+	if err != nil {
+		slog.Error("RedisKV: Exists: redis error", "error", err)
+	}
+
+	return v, err
 }
 
 // Get implements KVStorer.
@@ -32,6 +38,8 @@ func (r *RedisKV) Get(ctx context.Context, key string) (string, error) {
 	if err != nil {
 		if valkey.IsValkeyNil(err) {
 			err = ErrValueNotFound
+		} else {
+			slog.Error("RedisKV: Get: redis error", "error", err)
 		}
 	}
 
@@ -49,6 +57,8 @@ func (r *RedisKV) GetEx(
 	if err != nil {
 		if valkey.IsValkeyNil(err) {
 			err = ErrValueNotFound
+		} else {
+			slog.Error("RedisKV: GetEx: redis error", "error", err)
 		}
 	}
 
@@ -83,7 +93,12 @@ func (r *RedisKV) GetValueEx(
 // Set implements KVStorer.
 func (r *RedisKV) Set(ctx context.Context, key string, value string) error {
 	cmd := r.c.B().Set().Key(key).Value(value).Build()
-	return r.c.Do(ctx, cmd).Error()
+	err := r.c.Do(ctx, cmd).Error()
+	if err != nil {
+		slog.Error("RedisKV: Set: redis error", "error", err)
+	}
+
+	return err
 }
 
 // SetEx implements KVStorer.
@@ -94,7 +109,12 @@ func (r *RedisKV) SetEx(
 	ttl time.Duration,
 ) error {
 	cmd := r.c.B().Set().Key(key).Value(value).Ex(ttl).Build()
-	return r.c.Do(ctx, cmd).Error()
+	err := r.c.Do(ctx, cmd).Error()
+	if err != nil {
+		slog.Error("RedisKV: SetEx: redis error", "error", err)
+	}
+
+	return err
 }
 
 // SetValue implements KVStorer.
@@ -127,6 +147,7 @@ func (r *RedisKV) Delete(ctx context.Context, key string) error {
 	cmd := r.c.B().Del().Key(key).Build()
 	ct, err := r.c.Do(ctx, cmd).AsInt64()
 	if err != nil {
+		slog.Error("RedisKV: Delete: redis error", "error", err)
 		return err
 	}
 
