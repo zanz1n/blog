@@ -39,12 +39,14 @@ jobs:
           path: |
             ~/.cache/go-build
             ~/go/pkg/mod
-          key: ${{ runner.os }}-golang-${{ hashFiles('**/go.sum') }}
+          key: ${{ runner.os }}-${{ runner.arch }}-golang-${{ hashFiles('**/go.sum') }}
           restore-keys: |
-            ${{ runner.os }}-golang-
+            ${{ runner.os }}-${{ runner.arch }}-golang-
 
       - name: Download packages
-        run: go mod download
+        run: |
+          go mod download
+          make deps
 
       - name: Build server
         env:
