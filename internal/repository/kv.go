@@ -3,6 +3,7 @@ package repository
 import (
 	"context"
 	"errors"
+	"io"
 	"net/http"
 	"time"
 
@@ -38,4 +39,6 @@ type KVStorer interface {
 	SetValueEx(ctx context.Context, key string, v any, ttl time.Duration) error
 
 	Delete(ctx context.Context, key string) error
+
+	io.Closer
 }

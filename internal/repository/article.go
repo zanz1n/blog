@@ -300,3 +300,7 @@ func (r *ArticleRepository) getAny(
 	}
 	return article, err
 }
+
+func (r *ArticleRepository) Close() error {
+	return r.q.Close()
+}

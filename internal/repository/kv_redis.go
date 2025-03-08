@@ -156,3 +156,8 @@ func (r *RedisKV) Delete(ctx context.Context, key string) error {
 	}
 	return nil
 }
+
+// Close implements KVStorer.
+func (r *RedisKV) Close() error {
+	return nil
+}

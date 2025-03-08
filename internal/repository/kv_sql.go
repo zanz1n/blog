@@ -216,3 +216,8 @@ func (r *SqlKV) Cleanup(ctx context.Context) error {
 	}
 	return err
 }
+
+// Close implements KVStorer.
+func (r *SqlKV) Close() error {
+	return r.q.Close()
+}
