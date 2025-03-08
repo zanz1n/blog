@@ -32,6 +32,9 @@ endif
 OS := $(if $(GOOS),$(GOOS),$(shell GOTOOLCHAIN=local $(GO) env GOOS))
 ARCH := $(if $(GOARCH),$(GOARCH),$(shell GOTOOLCHAIN=local $(GO) env GOARCH))
 
+# Necessary for sqlite cross compilation
+GOTAGS += $(OS) $(ARCH)
+
 ifeq ($(OS), windows)
 SUFIX += .exe
 endif
@@ -51,7 +54,7 @@ ifneq ($(OUTPUT),)
 	GOOS=$(OS) GOARCH=$(ARCH) $(GO) build -ldflags "$(LDFLAGS)" -tags "$(GOTAGS)" \
 	-o $(OUTPUT) $(GOMODPATH)/cmd/$*
 else
-	GOOS=$(OS) GOARCH=$(ARCH) $(GO) build -ldflags "$(LDFLAGS)" -tags "$(GOTAGS)"  \
+	GOOS=$(OS) GOARCH=$(ARCH) $(GO) build -ldflags "$(LDFLAGS)" -tags "$(GOTAGS)" \
 	-o $(DIR)/$(PREFIX)$*-$(OS)-$(ARCH)$(SUFIX) $(GOMODPATH)/cmd/$*
 endif
 ifneq ($(POST_BUILD_CHMOD),)
