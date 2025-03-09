@@ -9,16 +9,21 @@ type ErrorData struct {
 }
 
 templ ErrorPage(e ErrorData) {
-	@Page(Error(e), e.Message)
+	@Page(errorLayout(e), e.Message)
 }
 
-templ Error(e ErrorData) {
-	<div class="prose-xl size-full flex flex-col content-center items-center">
-		<div class="text-center">
-			<h1 class="mt-0 mb-1">
-				<b>{ strconv.Itoa(e.HttpStatus) }</b>
-			</h1>
-			<h2 class="mt-1 mb-0">{ e.Message }</h2>
+templ errorLayout(e ErrorData) {
+	<div class="flex flex-col size-full justify-between">
+		@Header(nil)
+		<div class="prose mx-auto flex flex-col items-center content-center">
+			<div class="text-center">
+				<h1 class="mt-0 mb-1 sm:text-9xl text-8xl">
+					<b>{ strconv.Itoa(e.HttpStatus) }</b>
+				</h1>
+				<h2 class="mt-1 mb-0 sm:text-3xl text-xl">{ e.Message }</h2>
+			</div>
 		</div>
+		<div class="sm:block hidden"></div>
+		@Footer()
 	</div>
 }
