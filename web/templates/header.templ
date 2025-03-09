@@ -1,62 +1,70 @@
 package templates
 
-import "github.com/zanz1n/blog/internal/dto"
-import "strings"
+import (
+	"github.com/zanz1n/blog/internal/dto"
+	"strings"
+)
 
 templ Header(token *dto.AuthToken) {
-	<div class="navbar bg-base-200 shadow-sm">
-		<div class="navbar-start">
-			<div class="dropdown">
-				<div tabindex="0" role="button" class="btn btn-ghost btn-circle">
-					@svgNavbar()
-				</div>
-				<ul
-					tabindex="0"
-					class="menu menu-sm dropdown-content bg-base-100 rounded-box z-1 mt-3 w-52 p-2 shadow"
-				>
-					<li><a>Homepage</a></li>
-					<li><a>Portfolio</a></li>
-					<li><a>About</a></li>
-				</ul>
-			</div>
-		</div>
-		<div class="navbar-center">
-			<a class="btn btn-ghost text-xl">Blog</a>
-		</div>
-		<div class="navbar-end gap-6">
-			<label class="toggle sm:inline-grid hidden text-base-content">
-				<input id="lightswitch" type="checkbox"/>
-				@svgMoon()
-				@svgSun()
-			</label>
-			if token != nil {
-				<div class="dropdown dropdown-end">
-					// <div tabindex="0" role="button" class="btn btn-ghost btn-circle avatar">
-					// 	<div class="w-10 rounded-full">
-					// 		<img
-					// 			alt={ token.Nickname + " profile image" }
-					// 			src=""
-					// 		/>
-					// 	</div>
-					// </div>
-					<div tabindex="0" role="button" class="btn btn-ghost btn-circle avatar avatar-placeholder">
-						<div class="bg-neutral text-neutral-content w-10 rounded-full">
-							<span>{ initials(token.Name) }</span>
-						</div>
+	<div class="w-full bg-base-100/90 text-base-content sticky top-0 z-30 shadow-sm print:hidden">
+		<nav class="navbar w-full">
+			<div class="navbar-start">
+				<div class="dropdown">
+					<div tabindex="0" role="button" class="btn btn-ghost btn-circle">
+						@svgNavbar()
 					</div>
 					<ul
 						tabindex="0"
 						class="menu menu-sm dropdown-content bg-base-100 rounded-box z-1 mt-3 w-52 p-2 shadow"
 					>
-						<li><a href="/profile">Profile</a></li>
-						<li><a href="/profile/settings">Settings</a></li>
-						<li><a href="/auth/logout">Logout</a></li>
+						<li><a href="/">Home</a></li>
+						<li><a>Create post</a></li>
+						<li><a href="/about">About</a></li>
 					</ul>
 				</div>
-			} else {
-				<a class="btn btn-outline" href="/auth/login">Login</a>
-			}
-		</div>
+			</div>
+			<div class="navbar-center">
+				<a class="btn btn-ghost text-xl" href="/">Blog</a>
+			</div>
+			<div class="navbar-end gap-6">
+				<label class="toggle sm:inline-grid hidden text-base-content">
+					<input id="lightswitch" type="checkbox"/>
+					@svgMoon()
+					@svgSun()
+				</label>
+				if token != nil {
+					<div class="dropdown dropdown-end">
+						// <div tabindex="0" role="button" class="btn btn-ghost btn-circle avatar">
+						// 	<div class="w-10 rounded-full">
+						// 		<img
+						// 			alt={ token.Nickname + " profile image" }
+						// 			src=""
+						// 		/>
+						// 	</div>
+						// </div>
+						<div
+							tabindex="0"
+							role="button"
+							class="btn btn-ghost btn-circle avatar avatar-placeholder"
+						>
+							<div class="bg-neutral text-neutral-content w-10 rounded-full">
+								<span>{ initials(token.Name) }</span>
+							</div>
+						</div>
+						<ul
+							tabindex="0"
+							class="menu menu-sm dropdown-content bg-base-100 rounded-box z-1 mt-3 w-52 p-2 shadow"
+						>
+							<li><a href="/profile">Profile</a></li>
+							<li><a href="/profile/settings">Settings</a></li>
+							<li><a href="/auth/logout">Logout</a></li>
+						</ul>
+					</div>
+				} else {
+					<a class="btn btn-outline" href="/auth/login">Login</a>
+				}
+			</div>
+		</nav>
 	</div>
 }
 
