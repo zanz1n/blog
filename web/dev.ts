@@ -11,16 +11,12 @@ const jsExts = ["ts", "js"];
 const cssExts = ["css", "templ"];
 
 async function buildCss() {
-    const start = Date.now();
     const res = await build.buildCss(dir, devmode);
-    const took = Date.now() - start;
     return res;
 }
 
 async function buildJs() {
-    const start = Date.now();
     const res = await build.buildJs(dir, devmode);
-    const took = Date.now() - start;
     return res;
 }
 
