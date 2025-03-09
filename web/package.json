@@ -5,7 +5,10 @@
     "license": "AGPL-3.0-only",
     "author": "Izan Rodrigues <izanrodrigues999@gmail.com>",
     "scripts": {
-        "dev": "bun ./dev.ts"
+        "dev": "bun ./dev.ts",
+        "build": "bun ./build.ts",
+        "lint": "prettier --check . && eslint .",
+        "format": "prettier --write ."
     },
     "devDependencies": {
         "@tailwindcss/cli": "^4.0.10",
