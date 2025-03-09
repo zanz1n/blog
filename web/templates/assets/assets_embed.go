@@ -1,5 +1,5 @@
-//go:build embed || debug
-// +build embed debug
+//go:build !lambda
+// +build !lambda
 
 package assets
 

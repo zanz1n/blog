@@ -1,5 +1,5 @@
-//go:build embed && !lambda
-// +build embed,!lambda
+//go:build !debug && !lambda
+// +build !debug,!lambda
 
 package main
 
