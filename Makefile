@@ -64,7 +64,7 @@ endif
 $(DIR):
 	mkdir $(DIR)
 
-TESTFLAGS := -v -race
+TESTFLAGS := -v -race -tags "$(GOTAGS)"
 
 ifeq ($(SHORTTESTS), 1)
 TESTFLAGS += -short

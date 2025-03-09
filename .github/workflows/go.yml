@@ -53,4 +53,5 @@ jobs:
         env:
           CGO_ENABLED: 1
           SHORTTESTS: 1
+          DEBUG: 1
         run: make test
