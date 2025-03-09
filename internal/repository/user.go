@@ -8,10 +8,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/jackc/pgerrcode"
-	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jmoiron/sqlx"
-	"github.com/mattn/go-sqlite3"
 	"github.com/zanz1n/blog/internal/dto"
 	"github.com/zanz1n/blog/internal/utils/errutils"
 )
@@ -156,23 +153,6 @@ func (r *UserRepository) DeleteById(ctx context.Context, id dto.Snowflake) (dto.
 	return user, err
 }
 
-func (u *UserRepository) Close() error {
-	return u.q.Close()
-}
-
-func isUniqueConstraintViolation(err error) bool {
-	if sqliteErr, ok := err.(sqlite3.Error); ok {
-		if sqliteErr.Code == sqlite3.ErrConstraint {
-			return true
-		} else {
-			return false
-		}
-	} else if pgErr, ok := err.(*pgconn.PgError); ok {
-		if pgErr.Code == pgerrcode.UniqueViolation {
-			return true
-		} else {
-			return false
-		}
-	}
-	return false
+func (r *UserRepository) Close() error {
+	return r.q.Close()
 }
