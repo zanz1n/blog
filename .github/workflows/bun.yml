@@ -1,0 +1,37 @@
+name: Bun
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  build-and-test:
+    name: Build and test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Code checkout
+        uses: actions/checkout@v4
+        with:
+          lfs: true
+
+      - name: Set up Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Checkout LFS objects
+        run: git lfs checkout
+
+      - name: Download packages
+        working-directory: ./web
+        run: bun install
+
+      - name: Build
+        working-directory: ./web
+        run: bun run build
+
+      - name: Test
+        working-directory: ./web
+        run: bun run test
