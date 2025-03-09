@@ -5,8 +5,6 @@ package main
 
 import (
 	"context"
-	"crypto/ed25519"
-	"crypto/rand"
 	"errors"
 	"flag"
 	"fmt"
@@ -14,6 +12,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"path"
 	"syscall"
 	"time"
 
@@ -37,12 +36,32 @@ func init() {
 
 	signal.Notify(interrupt, syscall.SIGINT, syscall.SIGTERM)
 
+	dataDir := os.Getenv("DATA_DIR")
+	if dataDir == "" {
+		dataDir = "./data"
+	} else {
+		stat, err := os.Stat(dataDir)
+		if err != nil || !stat.IsDir() {
+			if err = os.Mkdir(dataDir, 0666); err != nil {
+				fatal(err)
+			}
+		}
+	}
+
 	if os.Getenv("DATABASE_URL") == "" {
-		os.Setenv("DATABASE_URL", "file:sqlite.db")
+		setenv("DATABASE_URL", "file:"+path.Join(dataDir, "sqlite.db"))
 	}
 
 	if os.Getenv("LISTEN_ADDR") == "" {
-		os.Setenv("LISTEN_ADDR", ":8080")
+		setenv("LISTEN_ADDR", ":8080")
+	}
+
+	if os.Getenv("JWT_PRIVATE_KEY") == "" {
+		setenv("JWT_PRIVATE_KEY", "file:"+path.Join(dataDir, "jwt.priv.pem"))
+	}
+
+	if os.Getenv("JWT_PUBLIC_KEY") == "" {
+		setenv("JWT_PUBLIC_KEY", "file:"+path.Join(dataDir, "jwt.pub.pem"))
 	}
 }
 
@@ -65,16 +84,20 @@ func main2() error {
 	if err != nil {
 		return err
 	}
+	defer kv.Close()
 
 	userRepo := repository.NewUserRepository(db)
 	defer userRepo.Close()
 
-	pub, priv, err := ed25519.GenerateKey(rand.Reader)
+	articlesRepo := repository.NewArticleRepository(db)
+	defer articlesRepo.Close()
+
+	jwtPub, jwtPriv, err := jwtKeyPair()
 	if err != nil {
 		return err
 	}
 
-	authRepo := repository.NewAuthRepository(priv, pub, "SRV", kv)
+	authRepo := repository.NewAuthRepository(jwtPriv, jwtPub, "SRV", kv)
 
 	r := chi.NewRouter()
 	r.Use(cors.Handler(cors.Options{

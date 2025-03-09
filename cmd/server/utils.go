@@ -144,6 +144,12 @@ func marshalKeyFile(name string, key any, private bool) (err error) {
 	return
 }
 
+func setenv(key, value string) {
+	if err := os.Setenv(key, value); err != nil {
+		fatal(err)
+	}
+}
+
 func fatal(err any) {
 	exitCode := 1
 	if err, ok := err.(error); ok {
