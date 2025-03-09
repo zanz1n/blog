@@ -39,12 +39,12 @@ func init() {
 	dataDir := os.Getenv("DATA_DIR")
 	if dataDir == "" {
 		dataDir = "./data"
-	} else {
-		stat, err := os.Stat(dataDir)
-		if err != nil || !stat.IsDir() {
-			if err = os.Mkdir(dataDir, 0666); err != nil {
-				fatal(err)
-			}
+	}
+
+	stat, err := os.Stat(dataDir)
+	if err != nil || !stat.IsDir() {
+		if err = os.Mkdir(dataDir, os.ModePerm); err != nil {
+			fatal(err)
 		}
 	}
 
