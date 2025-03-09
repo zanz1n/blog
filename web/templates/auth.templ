@@ -2,7 +2,7 @@ package templates
 
 templ LoginForm(err error) {
 	<form
-		class="flex sm:px-6 px-4 py-6 flex-col gap-4 w-full items-center"
+		class="w-full card-body gap-4 items-center"
 		hx-post="/auth/login"
 		hx-swap="outerHTML"
 		action="/auth/login"
@@ -56,8 +56,8 @@ templ LoginForm(err error) {
 templ login(err error) {
 	<div class="flex flex-col size-full justify-between">
 		@Header(nil)
-		<div class="prose w-full mx-auto flex flex-col items-center content-center">
-			<div class="sm:w-[90%] w-full">
+		<div class="prose w-full mx-auto max-w-full sm:max-w-md">
+			<div class="card card-md w-full card-border border-transparent sm:border-base-300 sm:bg-base-200 sm:shadow-sm">
 				@LoginForm(err)
 			</div>
 		</div>
@@ -72,7 +72,7 @@ templ LoginPage(err error) {
 
 templ SignUpForm(err error) {
 	<form
-		class="flex sm:px-6 px-4 py-6 flex-col gap-4 w-full items-center"
+		class="w-full card-body gap-4 items-center"
 		hx-post="/auth/signup"
 		hx-swap="outerHTML"
 		action="/auth/signup"
@@ -163,8 +163,8 @@ templ SignUpForm(err error) {
 templ signUp(err error) {
 	<div class="flex flex-col size-full justify-between">
 		@Header(nil)
-		<div class="prose w-full mx-auto flex flex-col items-center content-center">
-			<div class="sm:w-[90%] w-full">
+		<div class="prose w-full mx-auto max-w-full sm:max-w-md">
+			<div class="card card-md w-full card-border border-transparent sm:border-base-300 sm:bg-base-200 sm:shadow-sm">
 				@SignUpForm(err)
 			</div>
 		</div>
