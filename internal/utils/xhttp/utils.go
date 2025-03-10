@@ -9,16 +9,8 @@ import (
 
 type HandlerFunc func(w http.ResponseWriter, r *http.Request) error
 
-func ErrorMiddleware(h HandlerFunc) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		if err := h(w, r); err != nil {
-			Error(w, r, err)
-		}
-	}
-}
-
-func Error(w http.ResponseWriter, r *http.Request, err error) {
-	errd := errutils.Http(err)
+func Error(w http.ResponseWriter, r *http.Request, p templates.PageData[error]) {
+	errd := errutils.Http(p.Data)
 	data := templates.ErrorData{
 		Code:       errd.ErrorCode(),
 		HttpStatus: errd.HttpStatus(),
@@ -30,20 +22,28 @@ func Error(w http.ResponseWriter, r *http.Request, err error) {
 		data.Message = errd.Error()
 	}
 
-	handler(w, r, templates.ErrorPage, data, data.HttpStatus, true)
+	p2 := templates.PageData[templates.ErrorData]{
+		Name:  p.Name,
+		Token: p.Token,
+		Data:  data,
+	}
+
+	handler(w, r, templates.ErrorPage, p2, data.HttpStatus, true)
 }
 
-func Redirect(w http.ResponseWriter, r *http.Request, url string, code int) {
-	w.Header().Add("HX-Redirect", url)
-	http.Redirect(w, r, url, code)
+func Redirect(w http.ResponseWriter, r *http.Request, url string) {
+	if IsHtmx(r) {
+		w.Header().Add("HX-Redirect", url)
+		w.WriteHeader(http.StatusOK)
+	} else {
+		http.Redirect(w, r, url, http.StatusFound)
+	}
 }
 
-func NotFoundHandler(w http.ResponseWriter, r *http.Request) {
-	Error(w, r,
-		errutils.NewHttpS(
-			"Page not found",
-			http.StatusNotFound,
-			http.StatusNotFound,
-			true,
-		))
+func DelCookie(w http.ResponseWriter, name string) {
+	http.SetCookie(w, &http.Cookie{
+		Name:   name,
+		Path:   "/",
+		MaxAge: -1,
+	})
 }

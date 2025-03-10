@@ -1,9 +1,16 @@
 package templates
 
 import (
+	"github.com/zanz1n/blog/internal/dto"
 	"github.com/zanz1n/blog/web/templates/assets"
 	"strings"
 )
+
+type PageData[T any] struct {
+	Name  string         `json:"name"`
+	Token *dto.AuthToken `json:"token"`
+	Data  T
+}
 
 templ Page(body templ.Component, title string) {
 	<!DOCTYPE html>

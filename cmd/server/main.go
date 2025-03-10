@@ -25,7 +25,6 @@ import (
 	"github.com/zanz1n/blog/internal/repository"
 	"github.com/zanz1n/blog/internal/server"
 	"github.com/zanz1n/blog/internal/utils"
-	"github.com/zanz1n/blog/internal/utils/xhttp"
 )
 
 var interrupt = make(chan os.Signal, 1)
@@ -119,9 +118,10 @@ func main2() error {
 		return err
 	}
 
-	r.NotFound(xhttp.NotFoundHandler)
+	s := server.New(userRepo, authRepo)
 
-	server.New(userRepo, authRepo).Wire(r)
+	r.NotFound(s.NotFoundHandler)
+	s.Wire(r)
 
 	return listen(r)
 }

@@ -8,19 +8,19 @@ type ErrorData struct {
 	HttpStatus int    `json:"-"`
 }
 
-templ ErrorPage(e ErrorData) {
-	@Page(errorLayout(e), e.Message)
+templ ErrorPage(p PageData[ErrorData]) {
+	@Page(errorLayout(p), p.Data.Message)
 }
 
-templ errorLayout(e ErrorData) {
+templ errorLayout(p PageData[ErrorData]) {
 	<div class="flex flex-col size-full justify-between">
-		@Header(nil)
+		@Header(p.Token)
 		<div class="prose mx-auto flex flex-col items-center content-center">
 			<div class="text-center">
 				<h1 class="mt-0 mb-1 sm:text-9xl text-8xl">
-					<b>{ strconv.Itoa(e.HttpStatus) }</b>
+					<b>{ strconv.Itoa(p.Data.HttpStatus) }</b>
 				</h1>
-				<h2 class="mt-1 mb-0 sm:text-3xl text-xl">{ e.Message }</h2>
+				<h2 class="mt-1 mb-0 sm:text-3xl text-xl">{ p.Data.Message }</h2>
 			</div>
 		</div>
 		<div class="sm:block hidden"></div>

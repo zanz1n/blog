@@ -53,12 +53,12 @@ templ LoginForm(err error) {
 	</form>
 }
 
-templ login(err error) {
+templ login(p PageData[error]) {
 	<div class="flex flex-col size-full justify-between">
-		@Header(nil)
+		@Header(p.Token)
 		<div class="prose w-full mx-auto max-w-full sm:max-w-md">
 			<div class="card card-md w-full card-border border-transparent sm:border-base-300 sm:bg-base-200 sm:shadow-sm">
-				@LoginForm(err)
+				@LoginForm(p.Data)
 			</div>
 		</div>
 		<div></div>
@@ -66,8 +66,8 @@ templ login(err error) {
 	</div>
 }
 
-templ LoginPage(err error) {
-	@Page(login(err), "Login")
+templ LoginPage(p PageData[error]) {
+	@Page(login(p), "Login")
 }
 
 templ SignUpForm(err error) {
@@ -160,12 +160,12 @@ templ SignUpForm(err error) {
 	</form>
 }
 
-templ signUp(err error) {
+templ signUp(p PageData[error]) {
 	<div class="flex flex-col size-full justify-between">
-		@Header(nil)
+		@Header(p.Token)
 		<div class="prose w-full mx-auto max-w-full sm:max-w-md">
 			<div class="card card-md w-full card-border border-transparent sm:border-base-300 sm:bg-base-200 sm:shadow-sm">
-				@SignUpForm(err)
+				@SignUpForm(p.Data)
 			</div>
 		</div>
 		<div></div>
@@ -173,6 +173,6 @@ templ signUp(err error) {
 	</div>
 }
 
-templ SignUpPage(err error) {
-	@Page(signUp(err), "Sign up")
+templ SignUpPage(p PageData[error]) {
+	@Page(signUp(p), "Sign up")
 }
