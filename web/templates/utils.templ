@@ -1,6 +1,9 @@
 package templates
 
-import "github.com/zanz1n/blog/web/templates/assets"
+import (
+	"github.com/zanz1n/blog/web/templates/assets"
+	"strings"
+)
 
 templ Page(body templ.Component, title string) {
 	<!DOCTYPE html>
@@ -17,4 +20,21 @@ templ Page(body templ.Component, title string) {
 			@body
 		</body>
 	</html>
+}
+
+func initials(name string) string {
+	sp := strings.Split(name, " ")
+	if len(sp) == 0 {
+		return "UN"
+	} else if len(sp) == 1 {
+		if len(sp[0]) == 0 {
+			return "UN"
+		}
+		return string([]byte{sp[0][0]})
+	} else {
+		if len(sp[0]) == 0 || len(sp[len(sp)-1]) == 0 {
+			return "UN"
+		}
+		return string([]byte{sp[0][0], sp[len(sp)-1][0]})
+	}
 }
