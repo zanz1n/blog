@@ -2,7 +2,6 @@ package repository
 
 import (
 	"context"
-	"errors"
 	"io"
 	"net/http"
 	"time"
@@ -17,8 +16,8 @@ const (
 )
 
 var (
-	ErrValueNotFound = errutils.NewHttp(
-		errors.New("value not found"),
+	ErrValueNotFound = errutils.NewHttpS(
+		"Value not found",
 		http.StatusInternalServerError,
 		CodeValueNotFound,
 		false,

@@ -25,22 +25,22 @@ const (
 )
 
 var (
-	ErrExpiredAuthToken = errutils.NewHttp(
-		errors.New("authentication token expired"),
+	ErrExpiredAuthToken = errutils.NewHttpS(
+		"Authentication token expired",
 		http.StatusUnauthorized,
 		CodeAuthTokenExpired,
 		true,
 	)
 
-	ErrInvalidAuthToken = errutils.NewHttp(
-		errors.New("authentication token invalid"),
+	ErrInvalidAuthToken = errutils.NewHttpS(
+		"Authentication token invalid",
 		http.StatusUnauthorized,
 		CodeAuthTokenInvalid,
 		true,
 	)
 
-	ErrInvalidRefreshToken = errutils.NewHttp(
-		errors.New("refresh token invalid"),
+	ErrInvalidRefreshToken = errutils.NewHttpS(
+		"Refresh token invalid",
 		http.StatusUnauthorized,
 		CodeInvalidRefreshToken,
 		true,

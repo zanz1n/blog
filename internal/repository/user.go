@@ -21,14 +21,14 @@ const (
 )
 
 var (
-	ErrUserNotFound = errutils.NewHttp(
-		errors.New("user not found"),
+	ErrUserNotFound = errutils.NewHttpS(
+		"User not found",
 		http.StatusNotFound,
 		CodeUserNotFound,
 		true,
 	)
-	ErrUserAlreadyExists = errutils.NewHttp(
-		errors.New("user already exists, try a different email address"),
+	ErrUserAlreadyExists = errutils.NewHttpS(
+		"User already exists, try a different email address",
 		http.StatusConflict,
 		CodeUserAlreadyExists,
 		true,

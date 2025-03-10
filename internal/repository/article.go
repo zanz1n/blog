@@ -24,14 +24,14 @@ const (
 )
 
 var (
-	ErrArticleNotFound = errutils.NewHttp(
-		errors.New("article not found"),
+	ErrArticleNotFound = errutils.NewHttpS(
+		"Article not found",
 		http.StatusNotFound,
 		CodeArticleNotFound,
 		true,
 	)
-	ErrArticleAlreadyExists = errutils.NewHttp(
-		errors.New("article already exists"),
+	ErrArticleAlreadyExists = errutils.NewHttpS(
+		"Article already exists",
 		http.StatusConflict,
 		CodeArticleAlreadyExists,
 		true,

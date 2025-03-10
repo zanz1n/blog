@@ -54,10 +54,12 @@ func (r *SqlKV) Get(ctx context.Context, key string) (string, error) {
 	var value string
 	err = sttm.QueryRowContext(ctx, key, now).Scan(&value)
 
-	if errors.Is(err, sql.ErrNoRows) {
-		err = ErrValueNotFound
-	} else {
-		slog.Error("SqlKV: Get: sql error", "error", err)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			err = ErrValueNotFound
+		} else {
+			slog.Error("SqlKV: Get: sql error", "error", err)
+		}
 	}
 
 	return value, err
@@ -80,10 +82,12 @@ func (r *SqlKV) GetEx(
 	var value string
 	err = sttm.QueryRowContext(ctx, exp, key, now.Unix()).Scan(&value)
 
-	if errors.Is(err, sql.ErrNoRows) {
-		err = ErrValueNotFound
-	} else {
-		slog.Error("SqlKV: GetEx: sql error", "error", err)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			err = ErrValueNotFound
+		} else {
+			slog.Error("SqlKV: GetEx: sql error", "error", err)
+		}
 	}
 
 	return value, err
