@@ -86,10 +86,13 @@ func NewAuthRepository(
 	}
 }
 
-func (r *AuthRepository) ValidateRefreshToken(ctx context.Context, token string) error {
+func (r *AuthRepository) ValidateRefreshToken(
+	ctx context.Context,
+	token string,
+) (dto.Snowflake, error) {
 	tokenb, err := decodeRefreshToken(token)
 	if err != nil {
-		return err
+		return 0, err
 	}
 
 	userId := getRefreshTokenUser(tokenb)
@@ -100,14 +103,14 @@ func (r *AuthRepository) ValidateRefreshToken(ctx context.Context, token string)
 		if errors.Is(err, ErrValueNotFound) {
 			err = ErrInvalidRefreshToken
 		}
-		return err
+		return 0, err
 	}
 
 	if refreshToken != token {
-		return ErrInvalidRefreshToken
+		return 0, ErrInvalidRefreshToken
 	}
 
-	return nil
+	return userId, nil
 }
 
 func (r *AuthRepository) GenRefreshToken(

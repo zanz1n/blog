@@ -48,7 +48,7 @@ func TestAuthRefreshToken(t *testing.T) {
 				)
 			}
 
-			err := repo.ValidateRefreshToken(context.Background(), token)
+			_, err := repo.ValidateRefreshToken(context.Background(), token)
 			assert.Error(t, err)
 			assert.ErrorIs(t, err, repository.ErrInvalidRefreshToken)
 		}
@@ -59,13 +59,13 @@ func TestAuthRefreshToken(t *testing.T) {
 	token, err := repo.GenRefreshToken(context.Background(), userId)
 	assert.NoError(t, err)
 
-	err = repo.ValidateRefreshToken(context.Background(), token)
+	_, err = repo.ValidateRefreshToken(context.Background(), token)
 	assert.NoError(t, err)
 
 	err = repo.DeleteRefreshTokens(context.Background(), userId)
 	assert.NoError(t, err)
 
-	err = repo.ValidateRefreshToken(context.Background(), token)
+	_, err = repo.ValidateRefreshToken(context.Background(), token)
 	assert.Error(t, err)
 	assert.ErrorIs(t, err, repository.ErrInvalidRefreshToken)
 }
