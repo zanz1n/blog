@@ -6,6 +6,7 @@ require (
 	github.com/a-h/templ v0.3.833
 	github.com/akrylysov/algnhsa v1.1.0
 	github.com/alecthomas/chroma/v2 v2.15.0
+	github.com/aws/aws-lambda-go v1.47.0
 	github.com/elnormous/contenttype v1.0.4
 	github.com/go-chi/chi/v5 v5.2.1
 	github.com/go-chi/cors v1.2.1
@@ -22,7 +23,7 @@ require (
 	github.com/testcontainers/testcontainers-go v0.35.0
 	github.com/testcontainers/testcontainers-go/modules/postgres v0.35.0
 	github.com/testcontainers/testcontainers-go/modules/valkey v0.35.0
-	github.com/valkey-io/valkey-go v1.0.55
+	github.com/valkey-io/valkey-go v1.0.56
 	github.com/yuin/goldmark v1.7.8
 	github.com/yuin/goldmark-highlighting/v2 v2.0.0-20230729083705-37449abec8cc
 	golang.org/x/crypto v0.36.0
@@ -33,7 +34,6 @@ require (
 	github.com/AdaLogics/go-fuzz-headers v0.0.0-20230811130428-ced1acdcaa24 // indirect
 	github.com/Azure/go-ansiterm v0.0.0-20250102033503-faa5f7b0171c // indirect
 	github.com/Microsoft/go-winio v0.6.2 // indirect
-	github.com/aws/aws-lambda-go v1.47.0 // indirect
 	github.com/cenkalti/backoff/v4 v4.3.0 // indirect
 	github.com/containerd/log v0.1.0 // indirect
 	github.com/containerd/platforms v0.2.1 // indirect
