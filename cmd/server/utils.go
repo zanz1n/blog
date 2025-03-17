@@ -8,7 +8,6 @@ import (
 	"encoding/pem"
 	"errors"
 	"fmt"
-	"log/slog"
 	"os"
 	"slices"
 	"strings"
@@ -156,6 +155,11 @@ func fatal(err any) {
 		exitCode = errutils.Os(err).OsStatus()
 	}
 
-	slog.Error(fmt.Sprint("FATAL: ", err))
+	if os.Getenv("TERM") == "dumb" || os.Getenv("NO_COLOR") == "1" {
+		fmt.Printf("error: %s\n", err)
+	} else {
+		fmt.Printf("\x1b[31merror:\x1b[0m %s\n", err)
+	}
+
 	os.Exit(exitCode)
 }

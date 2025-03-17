@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"database/sql"
 	"flag"
 	"fmt"
@@ -55,7 +56,7 @@ func kvconnect(db *sqlx.DB) (repository.KVStorer, error) {
 	return repo, nil
 }
 
-func dbconnect() (db *sqlx.DB, err error) {
+func dbconnect(ctx context.Context) (db *sqlx.DB, err error) {
 	dbUrl := os.Getenv("DATABASE_URL")
 
 	start := time.Now()
@@ -75,13 +76,13 @@ func dbconnect() (db *sqlx.DB, err error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to open database pool: %s", err)
 	}
-	if err = db.Ping(); err != nil {
-		db.Close()
-		return nil, fmt.Errorf("failed to ping database: %s", err)
-	}
+	// if err = db.PingContext(ctx); err != nil {
+	// 	db.Close()
+	// 	return nil, fmt.Errorf("failed to ping database: %s", err)
+	// }
 
 	if *migrateOpt {
-		if err = migrate(db.DB, scheme); err != nil {
+		if err = migrate(ctx, db.DB, scheme); err != nil {
 			db.Close()
 			return nil, fmt.Errorf("failed to run database migrations: %s", err)
 		}
@@ -95,7 +96,7 @@ func dbconnect() (db *sqlx.DB, err error) {
 	return
 }
 
-func migrate(db *sql.DB, dialect string) error {
+func migrate(ctx context.Context, db *sql.DB, dialect string) error {
 	start := time.Now()
 	if err := goose.SetDialect(dialect); err != nil {
 		return err
@@ -107,7 +108,7 @@ func migrate(db *sql.DB, dialect string) error {
 	goose.SetBaseFS(migrations.EmbedMigrations)
 	goose.SetLogger(logger)
 
-	err := goose.Up(db, dialect)
+	err := goose.UpContext(ctx, db, dialect)
 	if err != nil {
 		return err
 	}
