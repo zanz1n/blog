@@ -9,7 +9,7 @@ CREATE TABLE users (
     permission integer NOT NULL,
     email varchar(128) NOT NULL,
     nickname varchar(32) NOT NULL,
-    name text,
+    name text NOT NULL,
     password bytea NOT NULL
 );
 

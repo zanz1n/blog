@@ -49,11 +49,6 @@ func (r *UserRepository) Create(ctx context.Context, user dto.User) error {
 		return err
 	}
 
-	name2 := sql.NullString{String: user.Name}
-	if user.Name != "" {
-		name2.Valid = true
-	}
-
 	_, err = sttm.ExecContext(ctx,
 		user.ID,
 		user.CreatedAt,
@@ -61,7 +56,7 @@ func (r *UserRepository) Create(ctx context.Context, user dto.User) error {
 		user.Permission,
 		user.Email,
 		user.Nickname,
-		name2,
+		user.Name,
 		user.Password,
 	)
 	if err != nil {
@@ -120,12 +115,7 @@ func (r *UserRepository) UpdateName(ctx context.Context, id dto.Snowflake, name 
 		return user, err
 	}
 
-	name2 := sql.NullString{String: name}
-	if name != "" {
-		name2.Valid = true
-	}
-
-	if err = sttm.GetContext(ctx, &user, name2, now, id); err != nil {
+	if err = sttm.GetContext(ctx, &user, name, now, id); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			err = ErrUserNotFound
 		} else {

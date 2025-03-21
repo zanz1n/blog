@@ -9,7 +9,7 @@ CREATE TABLE users(
     permission integer NOT NULL,
     email text NOT NULL,
     nickname text NOT NULL,
-    name text,
+    name text NOT NULL,
     password blob NOT NULL
 ) STRICT;
 
