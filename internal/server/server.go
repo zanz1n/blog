@@ -31,49 +31,19 @@ func (s *Server) Wire(r chi.Router) {
 	s.wireAuth(r)
 }
 
-func (s *Server) Error(w http.ResponseWriter, r *http.Request, err error) {
-	token, _ := s.getAuth(w, r)
-
-	xhttp.Error(w, r, templates.PageData[error]{
-		Name:  "Blog",
-		Token: token,
-		Data:  err,
-	})
-}
-
-func (s *Server) NotFoundHandler(w http.ResponseWriter, r *http.Request) {
-	token, _ := s.getAuth(w, r)
-
-	data := templates.PageData[error]{
-		Name:  "Blog",
-		Token: token,
-		Data: errutils.NewHttpS(
+func (s *Server) NotFoundHandler() http.HandlerFunc {
+	return s.m(func(c *xhttp.Ctx) error {
+		return errutils.NewHttpS(
 			"Not Found",
 			http.StatusNotFound,
 			http.StatusNotFound,
 			true,
-		),
-	}
-	xhttp.Error(w, r, data)
-}
-
-// Returned http.Cookie can be nil.
-func getCookie(cookies []*http.Cookie, name string) *http.Cookie {
-	for _, c := range cookies {
-		if c.Name == name {
-			return c
-		}
-	}
-	return nil
+		)
+	})
 }
 
 func (s *Server) m(h xhttp.HandlerFunc) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		err := h(w, r)
-		if err != nil {
-			s.Error(w, r, err)
-		}
-	}
+	return xhttp.CtxHandler(h, s.auth, s.users, true)
 }
 
 func (s *Server) cfm(
@@ -81,8 +51,8 @@ func (s *Server) cfm(
 	full xhttp.ComponentFunc[templates.PageData[error]],
 	partial xhttp.ComponentFunc[error],
 ) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		err := h(w, r)
+	return s.m(func(c *xhttp.Ctx) error {
+		err := h(c)
 		if err != nil {
 			herr := errutils.Http(err)
 
@@ -93,18 +63,19 @@ func (s *Server) cfm(
 				err = errors.New(http.StatusText(herr.HttpStatus()))
 			}
 
-			if xhttp.IsHtmx(r) {
-				xhttp.Component(w, r, partial, err, http.StatusOK)
+			if c.IsHtmx() {
+				xhttp.Component(c, partial, err, http.StatusOK)
 			} else {
-				token, _ := s.getAuth(w, r)
+				token, _ := c.GetAuth()
 				data := templates.PageData[error]{
 					Name:  "Blog",
 					Token: token,
 					Data:  err,
 				}
 
-				xhttp.Component(w, r, full, data, herr.HttpStatus())
+				xhttp.Component(c, full, data, herr.HttpStatus())
 			}
 		}
-	}
+		return nil
+	})
 }

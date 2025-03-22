@@ -26,15 +26,10 @@ func init() {
 	schemaDecoder.SetAliasTag("json")
 }
 
-func IsHtmx(r *http.Request) bool {
-	return r.Header.Get("HX-Request") == "true"
-}
-
-func Parse[T any](req *http.Request) (T, error) {
-	var value T
+func parse(req *http.Request, v any) error {
 	ct, _, err := mime.ParseMediaType(req.Header.Get("Content-Type"))
 	if err != nil {
-		return value, errutils.NewHttp(
+		return errutils.NewHttp(
 			errors.New("parse request: invalid content type"),
 			http.StatusBadRequest,
 			http.StatusBadRequest,
@@ -44,8 +39,8 @@ func Parse[T any](req *http.Request) (T, error) {
 
 	switch ct {
 	case "application/json":
-		if err = json.NewDecoder(req.Body).Decode(&value); err != nil {
-			return value, errutils.NewHttp(
+		if err = json.NewDecoder(req.Body).Decode(v); err != nil {
+			return errutils.NewHttp(
 				fmt.Errorf("parse request: json: %s", err),
 				http.StatusUnprocessableEntity,
 				http.StatusUnprocessableEntity,
@@ -54,8 +49,8 @@ func Parse[T any](req *http.Request) (T, error) {
 		}
 
 	case "application/x-www-form-urlencoded":
-		if err = parseFormReq(&value, req); err != nil {
-			return value, errutils.NewHttp(
+		if err = parseFormReq(v, req); err != nil {
+			return errutils.NewHttp(
 				fmt.Errorf("parse request: form: %s", err),
 				http.StatusUnprocessableEntity,
 				http.StatusUnprocessableEntity,
@@ -64,7 +59,7 @@ func Parse[T any](req *http.Request) (T, error) {
 		}
 
 	default:
-		return value, errutils.NewHttp(
+		return errutils.NewHttp(
 			fmt.Errorf("parse request: invalid content type: %s", ct),
 			http.StatusBadRequest,
 			http.StatusBadRequest,
@@ -72,11 +67,16 @@ func Parse[T any](req *http.Request) (T, error) {
 		)
 	}
 
-	if err = validate.Struct(&value); err != nil {
-		return value, convertValidateError(err)
+	if err = validate.StructCtx(req.Context(), v); err != nil {
+		return convertValidateError(err)
 	}
 
-	return value, nil
+	return nil
+}
+
+func Parse[T any](req *http.Request) (T, error) {
+	var value T
+	return value, parse(req, value)
 }
 
 func parseFormReq(dst any, req *http.Request) (err error) {

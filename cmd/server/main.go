@@ -120,7 +120,7 @@ func main2(ctx context.Context) error {
 
 	s := server.New(userRepo, authRepo)
 
-	r.NotFound(s.NotFoundHandler)
+	r.NotFound(s.NotFoundHandler())
 	s.Wire(r)
 
 	return listen(ctx, r)

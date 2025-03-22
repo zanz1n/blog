@@ -8,6 +8,7 @@ import (
 	"github.com/a-h/templ"
 	"github.com/elnormous/contenttype"
 	"github.com/zanz1n/blog/internal/utils/errutils"
+	"github.com/zanz1n/blog/web/templates"
 )
 
 var (
@@ -20,24 +21,44 @@ var mediaTypes = []contenttype.MediaType{ctypeHtml, ctypeJson}
 type ComponentFunc[T any] func(T) templ.Component
 
 func Component[T any](
-	w http.ResponseWriter,
-	r *http.Request,
+	c *Ctx,
 	cf ComponentFunc[T],
 	v T,
 	code int,
 ) error {
-	return handler(w, r, cf, v, code, false)
+	return handler(c, cf, v, code, false)
+}
+
+func Error(c *Ctx, p templates.PageData[error]) {
+	errd := errutils.Http(p.Data)
+	data := templates.ErrorData{
+		Code:       errd.ErrorCode(),
+		HttpStatus: errd.HttpStatus(),
+	}
+
+	if errd.Transparent() {
+		data.Message = http.StatusText(data.HttpStatus)
+	} else {
+		data.Message = errd.Error()
+	}
+
+	p2 := templates.PageData[templates.ErrorData]{
+		Name:  p.Name,
+		Token: p.Token,
+		Data:  data,
+	}
+
+	handler(c, templates.ErrorPage, p2, data.HttpStatus, true)
 }
 
 func handler[T any](
-	w http.ResponseWriter,
-	r *http.Request,
+	c *Ctx,
 	cf ComponentFunc[T],
 	v T,
 	code int,
 	ignoreparsing bool,
 ) error {
-	mt, _, err := contenttype.GetAcceptableMediaType(r, mediaTypes)
+	mt, _, err := contenttype.GetAcceptableMediaType(c.Request, mediaTypes)
 	if err != nil && !ignoreparsing {
 		return errutils.NewHttp(
 			fmt.Errorf("content negotiation: parse Accept header: %s", err),
@@ -49,12 +70,12 @@ func handler[T any](
 
 	isWildcard := mt.Type == `*` && mt.Subtype == `*`
 	if !isWildcard && mt.Matches(ctypeJson) {
-		if err = encodeJson(w, v, code); err != nil {
+		if err = encodeJson(c, v, code); err != nil {
 			return fmt.Errorf("encode json response: %s", err)
 		}
 	} else {
 		comp := cf(v)
-		err = encodeTemplate(comp, w, r, code)
+		err = encodeTemplate(comp, c, c.Request, code)
 		if err != nil {
 			return fmt.Errorf("encode html response: %s", err)
 		}
