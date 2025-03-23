@@ -22,7 +22,14 @@ type Config struct {
 
 	BcryptCost int `env:"BCRYPT_COST, default=12"`
 
+	// In seconds.
+	RequestTimeout uint8 `env:"REQUEST_TIMEOUT, default=10"`
+
 	JWT JwtConfig `env:", prefix=JWT_"`
+}
+
+func (c *Config) GetTimeout() time.Duration {
+	return time.Duration(c.RequestTimeout) * time.Second
 }
 
 type JwtConfig struct {

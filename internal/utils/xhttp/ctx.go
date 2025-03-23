@@ -1,6 +1,7 @@
 package xhttp
 
 import (
+	"context"
 	"net/http"
 	"time"
 
@@ -23,6 +24,7 @@ func CtxHandler(
 		start := time.Now()
 
 		c := newCtx(w, r, auth, users, cfg)
+		defer c.cancel()
 
 		err := h(c)
 		if err != nil {
@@ -47,7 +49,17 @@ func newCtx(
 	users *repository.UserRepository,
 	cfg *config.Config,
 ) *Ctx {
-	return &Ctx{w: w, Request: r, authr: auth, users: users, cfg: cfg}
+	ctx, cancel := context.WithTimeout(r.Context(), cfg.GetTimeout())
+
+	return &Ctx{
+		w:       w,
+		Request: r,
+		authr:   auth,
+		users:   users,
+		cfg:     cfg,
+		ctx:     ctx,
+		cancel:  cancel,
+	}
 }
 
 var _ http.ResponseWriter = &Ctx{}
@@ -67,6 +79,9 @@ type Ctx struct {
 
 	cookies       []*http.Cookie
 	cookiesParsed bool
+
+	ctx    context.Context
+	cancel func()
 }
 
 // Header implements http.ResponseWriter.
@@ -83,6 +98,10 @@ func (c *Ctx) Write(b []byte) (int, error) {
 func (c *Ctx) WriteHeader(statusCode int) {
 	c.statusCode = statusCode
 	c.w.WriteHeader(statusCode)
+}
+
+func (c *Ctx) Context() context.Context {
+	return c.Request.Context()
 }
 
 func (c *Ctx) GetStatusCode() int {
