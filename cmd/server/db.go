@@ -13,6 +13,7 @@ import (
 	"github.com/jmoiron/sqlx"
 	"github.com/pressly/goose/v3"
 	"github.com/valkey-io/valkey-go"
+	"github.com/zanz1n/blog/config"
 	"github.com/zanz1n/blog/internal/repository"
 	"github.com/zanz1n/blog/internal/utils"
 	"github.com/zanz1n/blog/migrations"
@@ -25,9 +26,12 @@ var migrateOpt = flag.Bool(
 )
 
 func kvconnect(db *sqlx.DB) (repository.KVStorer, error) {
-	redisUrl := os.Getenv("REDIS_URL")
+	cfg, err := config.Get()
+	if err != nil {
+		return nil, err
+	}
 
-	if redisUrl == "" {
+	if cfg.RedisUrl == "" {
 		slog.Info(
 			fmt.Sprintf("KeyValue: Using %s instance", db.DriverName()),
 		)
@@ -36,7 +40,7 @@ func kvconnect(db *sqlx.DB) (repository.KVStorer, error) {
 
 	start := time.Now()
 
-	url, err := valkey.ParseURL(redisUrl)
+	url, err := valkey.ParseURL(cfg.RedisUrl)
 	if err != nil {
 		return nil, err
 	}
@@ -57,20 +61,23 @@ func kvconnect(db *sqlx.DB) (repository.KVStorer, error) {
 }
 
 func dbconnect(ctx context.Context) (db *sqlx.DB, err error) {
-	dbUrl := os.Getenv("DATABASE_URL")
+	cfg, err := config.Get()
+	if err != nil {
+		return nil, err
+	}
 
 	start := time.Now()
 
 	var scheme string
-	if strings.HasPrefix(dbUrl, "file:") {
+	if strings.HasPrefix(cfg.DatabaseUrl, "file:") {
 		scheme = "sqlite"
-		if err = touch(dbUrl[len("file:"):]); err != nil {
+		if err = touch(cfg.DatabaseUrl[len("file:"):]); err != nil {
 			return
 		}
-		db, err = sqlx.Open("sqlite3", dbUrl)
+		db, err = sqlx.Open("sqlite3", cfg.DatabaseUrl)
 	} else {
 		scheme = "postgres"
-		db, err = sqlx.Open("pgx/v5", dbUrl)
+		db, err = sqlx.Open("pgx/v5", cfg.DatabaseUrl)
 	}
 
 	if err != nil {

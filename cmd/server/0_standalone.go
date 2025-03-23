@@ -10,11 +10,11 @@ import (
 	"log/slog"
 	"net"
 	"net/http"
-	"os"
 	"time"
 
 	"github.com/joho/godotenv"
 	_ "github.com/mattn/go-sqlite3"
+	"github.com/zanz1n/blog/config"
 	"github.com/zanz1n/blog/internal/utils"
 )
 
@@ -23,8 +23,13 @@ func init() {
 }
 
 func listen(ctx context.Context, h http.Handler) error {
+	cfg, err := config.Get()
+	if err != nil {
+		return err
+	}
+
 	server := &http.Server{
-		Addr:    os.Getenv("LISTEN_ADDR"),
+		Addr:    cfg.ListenAddr,
 		Handler: h,
 		BaseContext: func(net.Listener) context.Context {
 			return ctx

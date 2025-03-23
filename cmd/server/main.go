@@ -7,10 +7,10 @@ import (
 	"context"
 	"flag"
 	"fmt"
+	"log/slog"
 	"net/http"
 	"os"
 	"os/signal"
-	"path"
 	"syscall"
 
 	"github.com/go-chi/chi/v5"
@@ -19,6 +19,15 @@ import (
 	"github.com/zanz1n/blog/config"
 	"github.com/zanz1n/blog/internal/repository"
 	"github.com/zanz1n/blog/internal/server"
+)
+
+var (
+	jsonLogs = flag.Bool(
+		"json-logs",
+		false,
+		"enables or disables json logging",
+	)
+	debugLogs = flag.Bool("debug", false, "enables debug logs")
 )
 
 var interrupt = make(chan os.Signal, 1)
@@ -41,20 +50,22 @@ func init() {
 		}
 	}
 
-	if os.Getenv("DATABASE_URL") == "" {
-		setenv("DATABASE_URL", "file:"+path.Join(dataDir, "sqlite.db"))
+	cfg, err := config.Get()
+	if err != nil {
+		fatal(err)
 	}
 
-	if os.Getenv("LISTEN_ADDR") == "" {
-		setenv("LISTEN_ADDR", ":8080")
+	if *debugLogs {
+		cfg.LogLevel = slog.LevelDebug
 	}
 
-	if os.Getenv("JWT_PRIVATE_KEY") == "" {
-		setenv("JWT_PRIVATE_KEY", "file:"+path.Join(dataDir, "jwt.priv.pem"))
-	}
-
-	if os.Getenv("JWT_PUBLIC_KEY") == "" {
-		setenv("JWT_PUBLIC_KEY", "file:"+path.Join(dataDir, "jwt.pub.pem"))
+	if *jsonLogs {
+		slog.SetDefault(slog.New(slog.NewJSONHandler(
+			os.Stdout,
+			&slog.HandlerOptions{Level: cfg.LogLevel},
+		)))
+	} else {
+		slog.SetLogLoggerLevel(cfg.LogLevel)
 	}
 }
 

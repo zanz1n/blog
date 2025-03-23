@@ -12,19 +12,27 @@ import (
 	"slices"
 	"strings"
 
+	"github.com/zanz1n/blog/config"
 	"github.com/zanz1n/blog/internal/utils/errutils"
 )
 
 func jwtKeyPair() (ed25519.PublicKey, ed25519.PrivateKey, error) {
-	priv := os.Getenv("JWT_PRIVATE_KEY")
-	pub := os.Getenv("JWT_PUBLIC_KEY")
+	cfg, err := config.Get()
+	if err != nil {
+		return nil, nil, err
+	}
 
 	privFunc := func() (ed25519.PrivateKey, error) {
 		_, priv, err := ed25519.GenerateKey(rand.Reader)
 		return priv, err
 	}
 
-	privKeyRaw, err := envKeyPair(priv, ed25519.PrivateKeySize, true, privFunc)
+	privKeyRaw, err := envKeyPair(
+		cfg.JWT.PrivateKey,
+		ed25519.PrivateKeySize,
+		true,
+		privFunc,
+	)
 	if err != nil {
 		return nil, nil, fmt.Errorf("jwt private key: %w", err)
 	}
@@ -34,7 +42,12 @@ func jwtKeyPair() (ed25519.PublicKey, ed25519.PrivateKey, error) {
 		return privKey.Public().(ed25519.PublicKey), nil
 	}
 
-	pubKeyRaw, err := envKeyPair(pub, ed25519.PublicKeySize, false, pubFunc)
+	pubKeyRaw, err := envKeyPair(
+		cfg.JWT.PublicKey,
+		ed25519.PublicKeySize,
+		false,
+		pubFunc,
+	)
 	if err != nil {
 		return nil, nil, fmt.Errorf("jwt public key: %w", err)
 	}
@@ -141,12 +154,6 @@ func marshalKeyFile(name string, key any, private bool) (err error) {
 		Bytes: data,
 	})
 	return
-}
-
-func setenv(key, value string) {
-	if err := os.Setenv(key, value); err != nil {
-		fatal(err)
-	}
 }
 
 func fatal(err any) {
