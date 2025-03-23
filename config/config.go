@@ -20,6 +20,8 @@ type Config struct {
 
 	LogLevel slog.Level `env:"LOG_LEVEL, default=INFO"`
 
+	BcryptCost int `env:"BCRYPT_COST, default=12"`
+
 	JWT JwtConfig `env:", prefix=JWT_"`
 }
 
@@ -28,7 +30,7 @@ type JwtConfig struct {
 	PublicKey  string `env:"PUBLIC_KEY, default=file:$DATA_DIR/jwt.pub.pem"`
 
 	// In hours.
-	Duration uint8 `env:"DURATION"`
+	Duration uint8 `env:"DURATION, default=1"`
 }
 
 func (c *JwtConfig) GetDuration() time.Duration {

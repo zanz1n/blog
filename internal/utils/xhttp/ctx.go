@@ -4,6 +4,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/zanz1n/blog/config"
 	"github.com/zanz1n/blog/internal/dto"
 	"github.com/zanz1n/blog/internal/repository"
 	"github.com/zanz1n/blog/web/templates"
@@ -15,12 +16,13 @@ func CtxHandler(
 	h HandlerFunc,
 	auth *repository.AuthRepository,
 	users *repository.UserRepository,
+	cfg *config.Config,
 	logs bool,
 ) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		start := time.Now()
 
-		c := newCtx(w, r, auth, users)
+		c := newCtx(w, r, auth, users, cfg)
 
 		err := h(c)
 		if err != nil {
@@ -43,8 +45,9 @@ func newCtx(
 	r *http.Request,
 	auth *repository.AuthRepository,
 	users *repository.UserRepository,
+	cfg *config.Config,
 ) *Ctx {
-	return &Ctx{w: w, Request: r, authr: auth, users: users}
+	return &Ctx{w: w, Request: r, authr: auth, users: users, cfg: cfg}
 }
 
 var _ http.ResponseWriter = &Ctx{}
@@ -55,6 +58,7 @@ type Ctx struct {
 
 	authr *repository.AuthRepository
 	users *repository.UserRepository
+	cfg   *config.Config
 
 	statusCode int
 
@@ -171,8 +175,7 @@ func (c *Ctx) GetAuth() (*dto.AuthToken, error) {
 			return nil, err
 		}
 
-		// TODO: add jwt duration to configuration
-		token := dto.NewAuthToken(&user, "", time.Hour)
+		token := dto.NewAuthToken(&user, "", c.cfg.JWT.GetDuration())
 		authToken, err := c.authr.EncodeToken(token)
 		if err != nil {
 			return nil, err

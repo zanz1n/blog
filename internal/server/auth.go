@@ -3,7 +3,6 @@ package server
 import (
 	"errors"
 	"net/http"
-	"time"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/zanz1n/blog/internal/dto"
@@ -65,8 +64,7 @@ func (s *Server) PostAuthSignup(c *xhttp.Ctx) error {
 		return err
 	}
 
-	// TODO: add hashing cost to configuration
-	user, err := dto.NewUser(data, dto.PermissionDefault, 12)
+	user, err := dto.NewUser(data, dto.PermissionDefault, s.cfg.BcryptCost)
 	if err != nil {
 		return err
 	}
@@ -80,8 +78,7 @@ func (s *Server) PostAuthSignup(c *xhttp.Ctx) error {
 		return err
 	}
 
-	// TODO: add jwt duration to configuration
-	token := dto.NewAuthToken(&user, "", time.Hour)
+	token := dto.NewAuthToken(&user, "", s.cfg.JWT.GetDuration())
 	authToken, err := s.auth.EncodeToken(token)
 	if err != nil {
 		return err
@@ -138,8 +135,7 @@ func (s *Server) PostAuthLogin(c *xhttp.Ctx) error {
 		return err
 	}
 
-	// TODO: add jwt duration to configuration
-	token := dto.NewAuthToken(&user, "", time.Hour)
+	token := dto.NewAuthToken(&user, "", s.cfg.JWT.GetDuration())
 	authToken, err := s.auth.EncodeToken(token)
 	if err != nil {
 		return err

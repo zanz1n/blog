@@ -84,6 +84,11 @@ func main() {
 }
 
 func main2(ctx context.Context) error {
+	cfg, err := config.Get()
+	if err != nil {
+		return err
+	}
+
 	db, err := dbconnect(ctx)
 	if err != nil {
 		return err
@@ -129,7 +134,7 @@ func main2(ctx context.Context) error {
 		return err
 	}
 
-	s := server.New(userRepo, authRepo)
+	s := server.New(userRepo, authRepo, cfg)
 
 	r.NotFound(s.NotFoundHandler())
 	s.Wire(r)

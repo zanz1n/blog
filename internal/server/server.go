@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/go-chi/chi/v5"
+	"github.com/zanz1n/blog/config"
 	"github.com/zanz1n/blog/internal/repository"
 	"github.com/zanz1n/blog/internal/utils/errutils"
 	"github.com/zanz1n/blog/internal/utils/xhttp"
@@ -15,15 +16,19 @@ import (
 type Server struct {
 	users *repository.UserRepository
 	auth  *repository.AuthRepository
+
+	cfg *config.Config
 }
 
 func New(
 	users *repository.UserRepository,
 	auth *repository.AuthRepository,
+	cfg *config.Config,
 ) *Server {
 	return &Server{
 		users: users,
 		auth:  auth,
+		cfg:   cfg,
 	}
 }
 
@@ -43,7 +48,7 @@ func (s *Server) NotFoundHandler() http.HandlerFunc {
 }
 
 func (s *Server) m(h xhttp.HandlerFunc) http.HandlerFunc {
-	return xhttp.CtxHandler(h, s.auth, s.users, true)
+	return xhttp.CtxHandler(h, s.auth, s.users, s.cfg, true)
 }
 
 func (s *Server) cfm(
