@@ -31,7 +31,7 @@ func (e *httpStatus) Transparent() bool {
 	return e.transparent
 }
 
-func NewHttpS(err string, status int16, code int32, transparent ...bool)HttpError {
+func NewHttpS(err string, status int16, code int32, transparent ...bool) HttpError {
 	return NewHttp(errors.New(err), status, code, transparent...)
 }
 
