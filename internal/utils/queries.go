@@ -1,4 +1,4 @@
-package repository
+package utils
 
 import (
 	"context"
@@ -10,7 +10,6 @@ import (
 	"time"
 
 	"github.com/jmoiron/sqlx"
-	"github.com/zanz1n/blog/internal/utils"
 )
 
 var _ io.Closer = &Queries{}
@@ -20,7 +19,7 @@ type Queries struct {
 
 	name string
 
-	mp map[string]*utils.Lazy[sqlx.Stmt]
+	mp map[string]*Lazy[sqlx.Stmt]
 
 	closers   []io.Closer
 	closersMu sync.Mutex
@@ -30,13 +29,13 @@ func NewQueries(db *sqlx.DB, name string) *Queries {
 	return &Queries{
 		db:   db,
 		name: name,
-		mp:   make(map[string]*utils.Lazy[sqlx.Stmt]),
+		mp:   make(map[string]*Lazy[sqlx.Stmt]),
 	}
 }
 
 // This is not thread safe and must be called on initialization.
 func (q *Queries) Add(query, name string) {
-	lz := utils.NewLazy(func() (*sqlx.Stmt, error) {
+	lz := NewLazy(func() (*sqlx.Stmt, error) {
 		start := time.Now()
 
 		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
@@ -49,7 +48,7 @@ func (q *Queries) Add(query, name string) {
 			slog.Error(
 				fmt.Sprintf("%s: Failed to prepare query", q.name),
 				"name", name,
-				utils.TookAttr(start, 10*time.Microsecond),
+				TookAttr(start, 10*time.Microsecond),
 				"error", err,
 			)
 			return nil, err
@@ -58,7 +57,7 @@ func (q *Queries) Add(query, name string) {
 		slog.Info(
 			fmt.Sprintf("%s: Prepared query", q.name),
 			"name", name,
-			utils.TookAttr(start, 10*time.Microsecond),
+			TookAttr(start, 10*time.Microsecond),
 		)
 
 		q.closersMu.Lock()

@@ -2,27 +2,19 @@ package repository_test
 
 import (
 	"context"
-	"crypto/rand"
-	"io"
 	"log"
-	mrand "math/rand/v2"
-	"sync"
 	"testing"
 	"time"
 
 	_ "github.com/jackc/pgx/v5/stdlib"
 	"github.com/jmoiron/sqlx"
 	_ "github.com/mattn/go-sqlite3"
-	"github.com/pressly/goose/v3"
 	assert "github.com/stretchr/testify/require"
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/modules/postgres"
 	"github.com/testcontainers/testcontainers-go/wait"
 	"github.com/zanz1n/blog/internal/utils"
-	"github.com/zanz1n/blog/migrations"
 )
-
-var migrateOnce sync.Once
 
 var lazyDb = utils.NewLazy(func() (*sqlx.DB, error) {
 	return InitDb(nil)
@@ -56,13 +48,11 @@ func InitDb(t *testing.T) (*sqlx.DB, error) {
 
 	driver := "sqlite3"
 	dialect := "sqlite3"
-	mpath := "sqlite"
 	url := "file::memory:"
 
 	if !short {
 		driver = "pgx/v5"
 		dialect = "postgres"
-		mpath = "postgres"
 
 		container, endpoint, err := launchPostgresCt()
 		if err != nil {
@@ -88,12 +78,7 @@ func InitDb(t *testing.T) (*sqlx.DB, error) {
 		log.Printf("✅ Connected to %s instance\n", dialect)
 	}
 
-	gooseSetup(dialect)
-
-	err = goose.Up(db.DB, mpath)
-	if err != nil {
-		return nil, err
-	}
+	utils.MigrateUp(db)
 
 	if !short {
 		log.Printf("✅ Migrations completed on %s\n", dialect)
@@ -101,18 +86,6 @@ func InitDb(t *testing.T) (*sqlx.DB, error) {
 	}
 
 	return db, err
-}
-
-func gooseSetup(dialect string) {
-	migrateOnce.Do(func() {
-		err := goose.SetDialect(dialect)
-		if err != nil {
-			panic(err)
-		}
-
-		goose.SetBaseFS(migrations.EmbedMigrations)
-		goose.SetLogger(log.New(io.Discard, "", log.Flags()))
-	})
 }
 
 func launchPostgresCt() (testcontainers.Container, string, error) {
@@ -139,21 +112,6 @@ func launchPostgresCt() (testcontainers.Container, string, error) {
 	return container, cs, err
 }
 
-var letterRunes = []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
-
 func randString(n int) string {
-	b := make([]rune, n)
-	for i := range b {
-		b[i] = letterRunes[mrand.IntN(len(letterRunes))]
-	}
-	return string(b)
-}
-
-func randBytes(n int) []byte {
-	b := make([]byte, n)
-	_, err := rand.Read(b)
-	if err != nil {
-		panic(err)
-	}
-	return b
+	return utils.RandString(n, utils.Alphabet)
 }

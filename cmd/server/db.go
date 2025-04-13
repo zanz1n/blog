@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"database/sql"
 	"flag"
 	"fmt"
 	"log/slog"
@@ -11,12 +10,10 @@ import (
 	"time"
 
 	"github.com/jmoiron/sqlx"
-	"github.com/pressly/goose/v3"
 	"github.com/valkey-io/valkey-go"
 	"github.com/zanz1n/blog/config"
-	"github.com/zanz1n/blog/internal/repository"
+	"github.com/zanz1n/blog/internal/kv"
 	"github.com/zanz1n/blog/internal/utils"
-	"github.com/zanz1n/blog/migrations"
 )
 
 var migrateOpt = flag.Bool(
@@ -25,7 +22,7 @@ var migrateOpt = flag.Bool(
 	"executes database migrations before running the server",
 )
 
-func kvconnect(db *sqlx.DB) (repository.KVStorer, error) {
+func kvconnect(db *sqlx.DB) (kv.KVStorer, error) {
 	cfg, err := config.Get()
 	if err != nil {
 		return nil, err
@@ -35,7 +32,7 @@ func kvconnect(db *sqlx.DB) (repository.KVStorer, error) {
 		slog.Info(
 			fmt.Sprintf("KeyValue: Using %s instance", db.DriverName()),
 		)
-		return repository.NewSqlKV(db), nil
+		return kv.NewSqlKV(db), nil
 	}
 
 	start := time.Now()
@@ -50,7 +47,7 @@ func kvconnect(db *sqlx.DB) (repository.KVStorer, error) {
 		return nil, err
 	}
 
-	repo := repository.NewRedisKV(client)
+	repo := kv.NewRedisKV(client)
 
 	slog.Info(
 		"KeyValue: Connected to redis",
@@ -89,7 +86,7 @@ func dbconnect(ctx context.Context) (db *sqlx.DB, err error) {
 	// }
 
 	if *migrateOpt {
-		if err = migrate(ctx, db.DB, scheme); err != nil {
+		if err = utils.MigrateUpContext(ctx, db, true); err != nil {
 			db.Close()
 			return nil, fmt.Errorf("failed to run database migrations: %s", err)
 		}
@@ -101,30 +98,6 @@ func dbconnect(ctx context.Context) (db *sqlx.DB, err error) {
 	)
 
 	return
-}
-
-func migrate(ctx context.Context, db *sql.DB, dialect string) error {
-	start := time.Now()
-	if err := goose.SetDialect(dialect); err != nil {
-		return err
-	}
-
-	logger := slog.NewLogLogger(slog.Default().Handler(), slog.LevelInfo)
-	logger.SetPrefix("Database: ")
-
-	goose.SetBaseFS(migrations.EmbedMigrations)
-	goose.SetLogger(logger)
-
-	err := goose.UpContext(ctx, db, dialect)
-	if err != nil {
-		return err
-	}
-
-	slog.Info(
-		"Database: Executed migrations",
-		utils.TookAttr(start, time.Microsecond),
-	)
-	return nil
 }
 
 func touch(name string) error {

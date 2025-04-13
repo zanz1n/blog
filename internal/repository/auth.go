@@ -13,6 +13,7 @@ import (
 
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/zanz1n/blog/internal/dto"
+	"github.com/zanz1n/blog/internal/kv"
 	"github.com/zanz1n/blog/internal/utils/errutils"
 )
 
@@ -68,14 +69,14 @@ type AuthRepository struct {
 
 	issuer string
 
-	kv KVStorer
+	kv kv.KVStorer
 }
 
 func NewAuthRepository(
 	priv ed25519.PrivateKey,
 	pub ed25519.PublicKey,
 	issuer string,
-	kv KVStorer,
+	kv kv.KVStorer,
 ) *AuthRepository {
 	return &AuthRepository{
 		parser: jwt.NewParser(),
@@ -100,7 +101,7 @@ func (r *AuthRepository) ValidateRefreshToken(
 
 	refreshToken, err := r.kv.GetEx(ctx, key, refreshTokenExpiry)
 	if err != nil {
-		if errors.Is(err, ErrValueNotFound) {
+		if errors.Is(err, kv.ErrValueNotFound) {
 			err = ErrInvalidRefreshToken
 		}
 		return 0, err
@@ -124,7 +125,7 @@ func (r *AuthRepository) GenRefreshToken(
 		return refreshToken, nil
 	}
 
-	if !errors.Is(err, ErrValueNotFound) {
+	if !errors.Is(err, kv.ErrValueNotFound) {
 		return "", err
 	}
 
@@ -145,7 +146,7 @@ func (r *AuthRepository) DeleteRefreshTokens(
 	key := fmt.Sprintf("refresh_token/%s", userId)
 
 	err := r.kv.Delete(ctx, key)
-	if errors.Is(err, ErrValueNotFound) {
+	if errors.Is(err, kv.ErrValueNotFound) {
 		err = nil
 	}
 

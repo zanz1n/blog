@@ -1,20 +1,25 @@
-package repository_test
+package kv_test
 
 import (
 	"context"
 	"testing"
 	"time"
 
+	"github.com/jmoiron/sqlx"
 	assert "github.com/stretchr/testify/require"
 	"github.com/testcontainers/testcontainers-go"
 	valkeyct "github.com/testcontainers/testcontainers-go/modules/valkey"
 	"github.com/valkey-io/valkey-go"
-	"github.com/zanz1n/blog/internal/repository"
+	"github.com/zanz1n/blog/internal/kv"
+	"github.com/zanz1n/blog/internal/utils"
 )
 
-func kvRepo(t *testing.T) repository.KVStorer {
+func kvRepo(t *testing.T) kv.KVStorer {
 	if testing.Short() {
-		db, err := InitDb(t)
+		db, err := sqlx.Open("sqlite3", "file::memory:")
+		assert.NoError(t, err)
+
+		err = utils.MigrateUp(db)
 		assert.NoError(t, err)
 
 		db.SetMaxOpenConns(1)
@@ -22,7 +27,7 @@ func kvRepo(t *testing.T) repository.KVStorer {
 			db.Close()
 		})
 
-		return repository.NewSqlKV(db)
+		return kv.NewSqlKV(db)
 	}
 
 	valkeyCt, err := valkeyct.Run(context.Background(), "valkey/valkey:8-alpine")
@@ -39,7 +44,7 @@ func kvRepo(t *testing.T) repository.KVStorer {
 	client, err := valkey.NewClient(valkeyUrl)
 	assert.NoError(t, err)
 
-	return repository.NewRedisKV(client)
+	return kv.NewRedisKV(client)
 }
 
 func TestKv(t *testing.T) {
@@ -114,7 +119,7 @@ func TestKv(t *testing.T) {
 
 		_, err = repo.Get(context.Background(), key)
 		assert.Error(t, err)
-		assert.ErrorIs(t, err, repository.ErrValueNotFound)
+		assert.ErrorIs(t, err, kv.ErrValueNotFound)
 	})
 
 	t.Run("SetGetEx", func(t *testing.T) {
@@ -134,7 +139,7 @@ func TestKv(t *testing.T) {
 
 		_, err = repo.Get(context.Background(), key)
 		assert.Error(t, err)
-		assert.ErrorIs(t, err, repository.ErrValueNotFound)
+		assert.ErrorIs(t, err, kv.ErrValueNotFound)
 	})
 
 	t.Run("Delete", func(t *testing.T) {
@@ -145,7 +150,7 @@ func TestKv(t *testing.T) {
 
 		err := repo.Delete(context.Background(), key)
 		assert.Error(t, err)
-		assert.ErrorIs(t, err, repository.ErrValueNotFound)
+		assert.ErrorIs(t, err, kv.ErrValueNotFound)
 
 		err = repo.Set(context.Background(), key, value)
 		assert.NoError(t, err)
@@ -155,6 +160,10 @@ func TestKv(t *testing.T) {
 
 		_, err = repo.Get(context.Background(), key)
 		assert.Error(t, err)
-		assert.ErrorIs(t, err, repository.ErrValueNotFound)
+		assert.ErrorIs(t, err, kv.ErrValueNotFound)
 	})
+}
+
+func randString(n int) string {
+	return utils.RandString(n, utils.Alphabet)
 }

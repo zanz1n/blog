@@ -2,6 +2,7 @@ package repository
 
 import (
 	"github.com/jmoiron/sqlx"
+	"github.com/zanz1n/blog/internal/utils"
 )
 
 const articleCreateQuery = `INSERT INTO articles
@@ -98,11 +99,11 @@ WHERE id = $1
 RETURNING id, created_at, updated_at, user_id, title, description`
 
 type articleQueries struct {
-	*Queries
+	*utils.Queries
 }
 
 func newArticleQueries(db *sqlx.DB) articleQueries {
-	q := NewQueries(db, "ArticleQueries")
+	q := utils.NewQueries(db, "ArticleQueries")
 
 	q.Add(articleCreateQuery, "Create")
 

@@ -11,13 +11,19 @@ import (
 
 	assert "github.com/stretchr/testify/require"
 	"github.com/zanz1n/blog/internal/dto"
+	"github.com/zanz1n/blog/internal/kv"
 	"github.com/zanz1n/blog/internal/repository"
+	"github.com/zanz1n/blog/internal/utils"
 	"golang.org/x/crypto/bcrypt"
 )
 
 const issuer = "SRV"
 
-func authRepository(t *testing.T, kv repository.KVStorer) *repository.AuthRepository {
+func kvRepo(t *testing.T) kv.KVStorer {
+	return kv.NewSqlKV(GetDb(t))
+}
+
+func authRepository(t *testing.T, kv kv.KVStorer) *repository.AuthRepository {
 	pub, priv, err := ed25519.GenerateKey(rand.Reader)
 	assert.NoError(t, err)
 
@@ -44,7 +50,7 @@ func TestAuthRefreshToken(t *testing.T) {
 				token = randString(mrand.IntN(128))
 			} else {
 				token = base64.StdEncoding.EncodeToString(
-					randBytes(repository.RefreshTokenLen),
+					utils.RandBytes(repository.RefreshTokenLen),
 				)
 			}
 

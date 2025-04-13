@@ -1,9 +1,10 @@
-package repository
+package kv
 
 import (
 	"strings"
 
 	"github.com/jmoiron/sqlx"
+	"github.com/zanz1n/blog/internal/utils"
 )
 
 const kvExistsQuery = `SELECT COUNT(1)
@@ -33,11 +34,11 @@ WHERE key = $1 AND (expiry IS NULL OR expiry > $2)`
 const kvCleanupQuery = `DELETE FROM keyvalue expiry < $1`
 
 type kvQueries struct {
-	*Queries
+	*utils.Queries
 }
 
 func newKvQueries(db *sqlx.DB) kvQueries {
-	q := NewQueries(db, "KVQueries")
+	q := utils.NewQueries(db, "KVQueries")
 
 	q.Add(kvExistsQuery, "Exists")
 

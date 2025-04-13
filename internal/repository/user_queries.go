@@ -2,6 +2,7 @@ package repository
 
 import (
 	"github.com/jmoiron/sqlx"
+	"github.com/zanz1n/blog/internal/utils"
 )
 
 const userCreateQuery = `INSERT INTO users VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`
@@ -15,11 +16,11 @@ const userUpdateNameQuery = `UPDATE users SET name = $1, updated_at = $2 WHERE i
 const userDeleteByIdQuery = `DELETE FROM users WHERE id = $1 RETURNING *`
 
 type userQueries struct {
-	*Queries
+	*utils.Queries
 }
 
 func newUserQueries(db *sqlx.DB) userQueries {
-	q := NewQueries(db, "UserQueries")
+	q := utils.NewQueries(db, "UserQueries")
 
 	q.Add(userCreateQuery, "Create")
 	q.Add(userGetByIdQuery, "GetById")
