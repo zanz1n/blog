@@ -11,7 +11,7 @@ FROM keyvalue
 WHERE key = $1 AND (expiry IS NULL OR expiry > $2)`
 
 const kvGetQuery = `SELECT value
-FROM keyvalue 
+FROM keyvalue
 WHERE key = $1 AND (expiry IS NULL OR expiry > $2)`
 
 const kvGetExQuery = `UPDATE keyvalue
@@ -33,49 +33,49 @@ WHERE key = $1 AND (expiry IS NULL OR expiry > $2)`
 const kvCleanupQuery = `DELETE FROM keyvalue expiry < $1`
 
 type kvQueries struct {
-	*queries
+	*Queries
 }
 
 func newKvQueries(db *sqlx.DB) kvQueries {
-	q := newQueries(db, "KVQueries")
+	q := NewQueries(db, "KVQueries")
 
-	q.add(kvExistsQuery, "Exists")
+	q.Add(kvExistsQuery, "Exists")
 
-	q.add(kvGetQuery, "Get")
-	q.add(kvGetExQuery, "GetEx")
+	q.Add(kvGetQuery, "Get")
+	q.Add(kvGetExQuery, "GetEx")
 
-	q.add(kvDeleteQuery, "Delete")
-	q.add(kvCleanupQuery, "Cleanup")
+	q.Add(kvDeleteQuery, "Delete")
+	q.Add(kvCleanupQuery, "Cleanup")
 
 	if strings.Contains(db.DriverName(), "sqlite") {
-		q.add(kvSetQuerySQLITE, "Set")
+		q.Add(kvSetQuerySQLITE, "Set")
 	} else {
-		q.add(kvSetQueryPG, "Set")
+		q.Add(kvSetQueryPG, "Set")
 	}
 
 	return kvQueries{q}
 }
 
 func (q *kvQueries) Exists() (*sqlx.Stmt, error) {
-	return q.get("Exists")
+	return q.Get("Exists")
 }
 
-func (q *kvQueries) Get() (*sqlx.Stmt, error) {
-	return q.get("Get")
+func (q *kvQueries) GetQ() (*sqlx.Stmt, error) {
+	return q.Get("Get")
 }
 
 func (q *kvQueries) GetEx() (*sqlx.Stmt, error) {
-	return q.get("GetEx")
+	return q.Get("GetEx")
 }
 
 func (q *kvQueries) Set() (*sqlx.Stmt, error) {
-	return q.get("Set")
+	return q.Get("Set")
 }
 
 func (q *kvQueries) Delete() (*sqlx.Stmt, error) {
-	return q.get("Delete")
+	return q.Get("Delete")
 }
 
 func (q *kvQueries) Cleanup() (*sqlx.Stmt, error) {
-	return q.get("Cleanup")
+	return q.Get("Cleanup")
 }

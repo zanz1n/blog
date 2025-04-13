@@ -15,37 +15,37 @@ const userUpdateNameQuery = `UPDATE users SET name = $1, updated_at = $2 WHERE i
 const userDeleteByIdQuery = `DELETE FROM users WHERE id = $1 RETURNING *`
 
 type userQueries struct {
-	*queries
+	*Queries
 }
 
 func newUserQueries(db *sqlx.DB) userQueries {
-	q := newQueries(db, "UserQueries")
+	q := NewQueries(db, "UserQueries")
 
-	q.add(userCreateQuery, "Create")
-	q.add(userGetByIdQuery, "GetById")
-	q.add(userGetByEmailQuery, "GetByEmail")
-	q.add(userUpdateNameQuery, "UpdateName")
-	q.add(userDeleteByIdQuery, "DeleteById")
+	q.Add(userCreateQuery, "Create")
+	q.Add(userGetByIdQuery, "GetById")
+	q.Add(userGetByEmailQuery, "GetByEmail")
+	q.Add(userUpdateNameQuery, "UpdateName")
+	q.Add(userDeleteByIdQuery, "DeleteById")
 
 	return userQueries{q}
 }
 
 func (q *userQueries) Create() (*sqlx.Stmt, error) {
-	return q.get("Create")
+	return q.Get("Create")
 }
 
 func (q *userQueries) GetById() (*sqlx.Stmt, error) {
-	return q.get("GetById")
+	return q.Get("GetById")
 }
 
 func (q *userQueries) GetByEmail() (*sqlx.Stmt, error) {
-	return q.get("GetByEmail")
+	return q.Get("GetByEmail")
 }
 
 func (q *userQueries) UpdateName() (*sqlx.Stmt, error) {
-	return q.get("UpdateName")
+	return q.Get("UpdateName")
 }
 
 func (q *userQueries) DeleteById() (*sqlx.Stmt, error) {
-	return q.get("DeleteById")
+	return q.Get("DeleteById")
 }

@@ -13,9 +13,9 @@ import (
 	"github.com/zanz1n/blog/internal/utils"
 )
 
-var _ io.Closer = &queries{}
+var _ io.Closer = &Queries{}
 
-type queries struct {
+type Queries struct {
 	db *sqlx.DB
 
 	name string
@@ -26,8 +26,8 @@ type queries struct {
 	closersMu sync.Mutex
 }
 
-func newQueries(db *sqlx.DB, name string) *queries {
-	return &queries{
+func NewQueries(db *sqlx.DB, name string) *Queries {
+	return &Queries{
 		db:   db,
 		name: name,
 		mp:   make(map[string]*utils.Lazy[sqlx.Stmt]),
@@ -35,7 +35,7 @@ func newQueries(db *sqlx.DB, name string) *queries {
 }
 
 // This is not thread safe and must be called on initialization.
-func (q *queries) add(query, name string) {
+func (q *Queries) Add(query, name string) {
 	lz := utils.NewLazy(func() (*sqlx.Stmt, error) {
 		start := time.Now()
 
@@ -71,7 +71,7 @@ func (q *queries) add(query, name string) {
 }
 
 // This is thread safe and can be called at any time.
-func (q *queries) get(name string) (*sqlx.Stmt, error) {
+func (q *Queries) Get(name string) (*sqlx.Stmt, error) {
 	lz, ok := q.mp[name]
 	if !ok {
 		return nil, fmt.Errorf("queries: `%s` query does not exist", name)
@@ -82,7 +82,7 @@ func (q *queries) get(name string) (*sqlx.Stmt, error) {
 // Close implements io.Closer.
 //
 // This is thread safe and can be called at any time.
-func (q *queries) Close() error {
+func (q *Queries) Close() error {
 	q.closersMu.Lock()
 	defer q.closersMu.Unlock()
 

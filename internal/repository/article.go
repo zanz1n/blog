@@ -254,7 +254,7 @@ func (r *ArticleRepository) getAnyWithUser(
 		User    dto.User    `db:"users"`
 	}
 
-	sttm, err := r.q.get(name)
+	sttm, err := r.q.Get(name)
 	if err != nil {
 		return dto.Article{}, err
 	}
@@ -283,7 +283,7 @@ func (r *ArticleRepository) getAny(
 ) (dto.Article, error) {
 	var article dto.Article
 
-	sttm, err := r.q.get(name)
+	sttm, err := r.q.Get(name)
 	if err != nil {
 		return article, err
 	}

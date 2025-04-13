@@ -98,51 +98,51 @@ WHERE id = $1
 RETURNING id, created_at, updated_at, user_id, title, description`
 
 type articleQueries struct {
-	*queries
+	*Queries
 }
 
 func newArticleQueries(db *sqlx.DB) articleQueries {
-	q := newQueries(db, "ArticleQueries")
+	q := NewQueries(db, "ArticleQueries")
 
-	q.add(articleCreateQuery, "Create")
+	q.Add(articleCreateQuery, "Create")
 
-	q.add(articleGetQuery, "Get")
-	q.add(articleGetWithUserQuery, "GetWithUser")
-	q.add(articleGetWithContentQuery, "GetWithContent")
-	q.add(articleGetWithRawContentQuery, "GetWithRawContent")
-	q.add(articleGetFullQuery, "GetFull")
+	q.Add(articleGetQuery, "Get")
+	q.Add(articleGetWithUserQuery, "GetWithUser")
+	q.Add(articleGetWithContentQuery, "GetWithContent")
+	q.Add(articleGetWithRawContentQuery, "GetWithRawContent")
+	q.Add(articleGetFullQuery, "GetFull")
 
-	q.add(articleGetMany, "GetMany")
-	q.add(articleGetManyByUser, "GetManyByUser")
+	q.Add(articleGetMany, "GetMany")
+	q.Add(articleGetManyByUser, "GetManyByUser")
 
-	q.add(articleUpdateDataQuery, "UpdateData")
-	q.add(articleUpdateContentQuery, "UpdateContent")
+	q.Add(articleUpdateDataQuery, "UpdateData")
+	q.Add(articleUpdateContentQuery, "UpdateContent")
 
-	q.add(articleDeleteQuery, "Delete")
+	q.Add(articleDeleteQuery, "Delete")
 
 	return articleQueries{q}
 }
 
 func (q *articleQueries) Create() (*sqlx.Stmt, error) {
-	return q.get("Create")
+	return q.Get("Create")
 }
 
 func (q *articleQueries) GetMany() (*sqlx.Stmt, error) {
-	return q.get("GetMany")
+	return q.Get("GetMany")
 }
 
 func (q *articleQueries) GetManyByUser() (*sqlx.Stmt, error) {
-	return q.get("GetManyByUser")
+	return q.Get("GetManyByUser")
 }
 
 func (q *articleQueries) UpdateData() (*sqlx.Stmt, error) {
-	return q.get("UpdateData")
+	return q.Get("UpdateData")
 }
 
 func (q *articleQueries) UpdateContent() (*sqlx.Stmt, error) {
-	return q.get("UpdateContent")
+	return q.Get("UpdateContent")
 }
 
 func (q *articleQueries) Delete() (*sqlx.Stmt, error) {
-	return q.get("Delete")
+	return q.Get("Delete")
 }

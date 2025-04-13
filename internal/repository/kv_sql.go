@@ -44,7 +44,7 @@ func (r *SqlKV) Exists(ctx context.Context, key string) (bool, error) {
 
 // Get implements KVStorer.
 func (r *SqlKV) Get(ctx context.Context, key string) (string, error) {
-	sttm, err := r.q.Get()
+	sttm, err := r.q.GetQ()
 	if err != nil {
 		return "", err
 	}
