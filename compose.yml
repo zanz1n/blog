@@ -1,0 +1,45 @@
+x-common:
+  postgres: &postgres-env
+    POSTGRES_DB: blog
+    POSTGRES_USER: docker
+    POSTGRES_PASSWORD: "password"
+
+    DATABASE_URL: postgres://docker:password@postgres:5432/blog
+
+  redis: &redis-env
+    REDIS_URL: redis://redis:6379
+
+services:
+  blog:
+    build: .
+    restart: unless-stopped
+    ports:
+      - 8080:8080
+    environment:
+      <<: [*postgres-env, *redis-env]
+      DATA_DIR: /data
+    volumes:
+      - ./data:/data
+
+  postgres:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      <<: [*postgres-env]
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+
+  redis:
+    image: valkey/valkey:8-alpine
+    restart: unless-stopped
+    command: ["--save", "60", "1"]
+    volumes:
+      - redis_data:/data
+
+networks:
+  default:
+    driver: bridge
+
+volumes:
+  pg_data:
+  redis_data:
