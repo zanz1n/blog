@@ -12,19 +12,19 @@
         "format": "prettier --write ."
     },
     "devDependencies": {
-        "@tailwindcss/cli": "^4.0.17",
+        "@tailwindcss/cli": "^4.1.4",
         "@tailwindcss/typography": "^0.5.16",
-        "@types/bun": "^1.2.8",
+        "@types/bun": "^1.2.10",
         "@types/eslint": "^9.6.1",
-        "@types/node": "^22.13.14",
+        "@types/node": "^22.14.1",
         "chokidar": "^4.0.3",
-        "daisyui": "^5.0.9",
-        "esbuild": "^0.25.1",
-        "eslint": "^9.23.0",
-        "eslint-config-prettier": "^10.1.1",
+        "daisyui": "^5.0.27",
+        "esbuild": "^0.25.2",
+        "eslint": "^9.25.0",
+        "eslint-config-prettier": "^10.1.2",
         "prettier": "^3.5.3",
-        "tailwindcss": "^4.0.17",
-        "typescript-eslint": "^8.28.0"
+        "tailwindcss": "^4.1.4",
+        "typescript-eslint": "^8.30.1"
     },
     "dependencies": {
         "htmx.org": "^2.0.4"
