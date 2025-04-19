@@ -39,6 +39,8 @@ ifeq ($(OS), windows)
 SUFIX += .exe
 endif
 
+CLI := $(DIR)/$(PREFIX)cli-$(OS)-$(ARCH)$(SUFIX)
+
 default: check build-server
 
 all: $(addprefix build-, $(BINS))
@@ -47,10 +49,8 @@ run:
 	cd web && bun run dev&
 	air
 
-build-server: generate
-
-build-%: $(DIR)
-ifneq ($(OUTPUT),) 
+build-%: generate $(DIR)
+ifneq ($(OUTPUT),)
 	GOOS=$(OS) GOARCH=$(ARCH) $(GO) build -ldflags "$(LDFLAGS)" -tags "$(GOTAGS)" \
 	-o $(OUTPUT) $(GOMODPATH)/cmd/$*
 else
@@ -84,9 +84,12 @@ endif
 bench:
 	$(GO) test -bench=. -count 3 -benchmem -run=^# ./...
 
-.SILENT: gen-checksums
 gen-checksums: $(DIR)
 	DIR=$(DIR) ./scripts/gen-checksums.sh
+
+gen-routes: build-cli
+gen-routes:
+	$(CLI) export-routes
 
 check: deps generate test
 
