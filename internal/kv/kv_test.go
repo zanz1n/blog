@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/jmoiron/sqlx"
+	_ "github.com/mattn/go-sqlite3"
 	assert "github.com/stretchr/testify/require"
 	"github.com/testcontainers/testcontainers-go"
 	valkeyct "github.com/testcontainers/testcontainers-go/modules/valkey"
