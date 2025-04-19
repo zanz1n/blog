@@ -1,6 +1,3 @@
-//go:build !lambda
-// +build !lambda
-
 package main
 
 import (
@@ -36,19 +33,6 @@ func init() {
 	flag.Parse()
 
 	signal.Notify(interrupt, syscall.SIGINT, syscall.SIGTERM)
-
-	dataDir := os.Getenv("DATA_DIR")
-	if dataDir == "" {
-		dataDir = "./data"
-		os.Setenv("DATA_DIR", dataDir)
-	}
-
-	stat, err := os.Stat(dataDir)
-	if err != nil || !stat.IsDir() {
-		if err = os.Mkdir(dataDir, os.ModePerm); err != nil {
-			fatal(err)
-		}
-	}
 
 	cfg, err := config.Get()
 	if err != nil {

@@ -10,6 +10,7 @@ import (
 	"log/slog"
 	"net"
 	"net/http"
+	"os"
 	"time"
 
 	"github.com/joho/godotenv"
@@ -20,6 +21,21 @@ import (
 
 func init() {
 	godotenv.Load()
+}
+
+func init() {
+	dataDir := os.Getenv("DATA_DIR")
+	if dataDir == "" {
+		dataDir = "./data"
+		os.Setenv("DATA_DIR", dataDir)
+	}
+
+	stat, err := os.Stat(dataDir)
+	if err != nil || !stat.IsDir() {
+		if err = os.Mkdir(dataDir, os.ModePerm); err != nil {
+			fatal(err)
+		}
+	}
 }
 
 func listen(ctx context.Context, h http.Handler) error {
