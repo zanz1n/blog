@@ -1,6 +1,7 @@
 package markdown_test
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -59,17 +60,8 @@ func TestMarkdownDoc(t *testing.T) {
 
 			defer res.Body.Close()
 
-			doc := markdown.GetDocument()
-			defer markdown.PutDocument(doc)
-
-			t.Run("Write", func(t *testing.T) {
-				_, err = io.Copy(doc, res.Body)
-				require.NoError(t, err)
-			})
-
-			t.Run("Parse", func(t *testing.T) {
-				doc.Parse()
-			})
+			doc, err := markdown.ParseDocument(res.Body)
+			require.NoError(t, err)
 
 			t.Run("Index", func(t *testing.T) {
 				idx, warnings := doc.Index()
@@ -78,7 +70,7 @@ func TestMarkdownDoc(t *testing.T) {
 			})
 
 			t.Run("Render", func(t *testing.T) {
-				err = doc.Render()
+				_, err := doc.Render()
 				require.NoError(t, err)
 			})
 
@@ -88,15 +80,11 @@ func TestMarkdownDoc(t *testing.T) {
 
 				defer os.Remove(tempfile)
 
-				file, err := os.Create(tempfile)
+				output, err := doc.Render()
 				require.NoError(t, err)
-				defer file.Close()
 
-				output := doc.Content()
-
-				written, err := io.Copy(file, doc)
+				err = os.WriteFile(tempfile, output, 0666)
 				require.NoError(t, err)
-				require.EqualValues(t, len(output), written)
 
 				fileBuf, err := os.ReadFile(tempfile)
 				require.NoError(t, err)
@@ -110,19 +98,24 @@ func BenchmarkMarkdown(b *testing.B) {
 	res, err := http.Get(testCases[0].path)
 	require.NoError(b, err)
 
-	doc := markdown.GetDocument()
-	defer markdown.PutDocument(doc)
-
-	_, err = io.Copy(doc, res.Body)
+	body, err := io.ReadAll(res.Body)
 	require.NoError(b, err)
+	defer res.Body.Close()
 
 	b.Run("Parse", func(b *testing.B) {
 		for i := 0; i < b.N; i++ {
-			doc.Parse()
+			doc, err := markdown.ParseDocument(bytes.NewReader(body))
+			if err != nil {
+				panic(err)
+			}
+			doc.Tree()
 		}
 	})
 
 	b.Run("Index", func(b *testing.B) {
+		doc, err := markdown.ParseDocument(bytes.NewReader(body))
+		require.NoError(b, err)
+
 		for i := 0; i < b.N; i++ {
 			idx, warnings := doc.Index()
 			_, _ = idx, warnings
@@ -130,8 +123,12 @@ func BenchmarkMarkdown(b *testing.B) {
 	})
 
 	b.Run("Render", func(b *testing.B) {
+		doc, err := markdown.ParseDocument(bytes.NewReader(body))
+		require.NoError(b, err)
+
 		for i := 0; i < b.N; i++ {
 			doc.Render()
+			doc.ResetRender()
 		}
 	})
 }
