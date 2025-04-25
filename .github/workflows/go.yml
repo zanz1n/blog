@@ -9,15 +9,13 @@ on:
     branches: [main]
 
 jobs:
-  build-and-test:
-    name: Build and test
-    runs-on: ubuntu-latest
+  build-and-test-amd64:
+    name: Build and test (amd64)
+    runs-on: ubuntu-24.04
     strategy:
       fail-fast: false
       matrix:
-        go: ["1.24"]
-        goos: [linux]
-        goarch: [amd64]
+        go: ["1.23", "1.24"]
 
     steps:
       - name: Code checkout
@@ -40,14 +38,69 @@ jobs:
           go mod download
           make deps
 
-      - name: Build
+      - name: Build server
         env:
-          GOOS: ${{ matrix.goos }}
-          GOARCH: ${{ matrix.goarch }}
           CGO_ENABLED: 1
+          DEBUG: 1
         run: |
           echo "{}" > web/.source-map.json
-          make DEBUG=1 build-server
+          make build-server
+
+      - name: Build cli
+        env:
+          CGO_ENABLED: 0
+          DEBUG: 1
+        run: make build-cli
+
+      - name: Test
+        env:
+          CGO_ENABLED: 1
+          SHORTTESTS: 1
+          DEBUG: 1
+        run: make test
+
+  build-and-test-arm64:
+    name: Build and test (arm64)
+    runs-on: ubuntu-24.04-arm
+    strategy:
+      fail-fast: false
+      matrix:
+        go: ["1.23", "1.24"]
+
+    steps:
+      - name: Code checkout
+        uses: actions/checkout@v4
+        with:
+          lfs: true
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: ${{ matrix.go }}
+          cache: true
+          cache-dependency-path: "**/go.sum"
+
+      - name: Checkout LFS objects
+        run: git lfs checkout
+
+      - name: Download packages
+        run: |
+          go mod download
+          make deps
+
+      - name: Build server
+        env:
+          CGO_ENABLED: 1
+          DEBUG: 1
+        run: |
+          echo "{}" > web/.source-map.json
+          make build-server
+
+      - name: Build cli
+        env:
+          CGO_ENABLED: 0
+          DEBUG: 1
+        run: make build-cli
 
       - name: Test
         env:
