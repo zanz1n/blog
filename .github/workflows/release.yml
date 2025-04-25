@@ -1,0 +1,154 @@
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+
+jobs:
+  build-amd64:
+    name: Build (amd64)
+    runs-on: ubuntu-24.04
+    env:
+      GOARCH: amd64
+
+    steps:
+      - name: Code checkout
+        uses: actions/checkout@v4
+        with:
+          lfs: true
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: ${{ matrix.go }}
+          # cache: true
+          # cache-dependency-path: "**/go.sum"
+
+      - name: Checkout LFS objects
+        run: git lfs checkout
+
+      - name: Download packages
+        run: |
+          go mod download
+          make deps
+
+      - name: Build server
+        env:
+          CGO_ENABLED: 1
+          REF: ${{ github.ref }}
+          POST_BUILD_CHMOD: 755
+          DEBUG: 0
+        run: make VERSION=${REF:11} build-server
+
+      - name: Build cli
+        env:
+          CGO_ENABLED: 1
+          REF: ${{ github.ref }}
+          POST_BUILD_CHMOD: 755
+          DEBUG: 0
+        run: make VERSION=${REF:11} build-cli
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: amd64-bins
+          path: ./bin/*
+          retention-days: 1
+
+  build-arm64:
+    name: Build (arm64)
+    runs-on: ubuntu-24.04-arm
+    env:
+      GOARCH: arm64
+
+    steps:
+      - name: Code checkout
+        uses: actions/checkout@v4
+        with:
+          lfs: true
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: ${{ matrix.go }}
+          # cache: true
+          # cache-dependency-path: "**/go.sum"
+
+      - name: Checkout LFS objects
+        run: git lfs checkout
+
+      - name: Download packages
+        run: |
+          go mod download
+          make deps
+
+      - name: Build server
+        env:
+          CGO_ENABLED: 1
+          REF: ${{ github.ref }}
+          POST_BUILD_CHMOD: 755
+          DEBUG: 0
+        run: make VERSION=${REF:11} build-server
+
+      - name: Build cli
+        env:
+          CGO_ENABLED: 1
+          REF: ${{ github.ref }}
+          POST_BUILD_CHMOD: 755
+          DEBUG: 0
+        run: make VERSION=${REF:11} build-cli
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: amd64-bins
+          path: ./bin/*
+          retention-days: 1
+
+  publish:
+    name: Publish
+    runs-on: ubuntu-24.04
+    needs:
+      - build-amd64
+      - build-arm64
+
+    steps:
+      - name: Code checkout
+        uses: actions/checkout@v4
+        with:
+          lfs: true
+
+      - name: Checkout LFS objects
+        run: git lfs checkout
+
+      - name: Download artifacts (amd64)
+        uses: actions/download-artifact@v4
+        with:
+          name: amd64-bins
+          path: ./bin
+          merge-multiple: true
+
+      - name: Download artifacts (arm64)
+        uses: actions/download-artifact@v4
+        with:
+          name: arm64-bins
+          path: ./bin
+          merge-multiple: true
+
+      - name: Create checksum
+        run: make gen-checksums
+
+      - name: Create release
+        id: create_release
+        uses: softprops/action-gh-release@v2
+        with:
+          draft: true
+          prerelease: ${{ contains(github.ref, 'rc') || contains(github.ref, 'beta') || contains(github.ref, 'alpha') }}
+          body_path: ./RELEASE_CHANGELOG
+          files: |
+            checksums.txt
+            LICENSE
+            bin/blog-server-linux-amd64
+            bin/blog-server-linux-arm64
+            bin/blog-cli-linux-amd64
+            bin/blog-cli-linux-arm64
