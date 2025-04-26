@@ -43,6 +43,7 @@ jobs:
       - name: Build server
         env:
           CGO_ENABLED: 1
+          GOTAGS: embed
           REF: ${{ github.ref }}
           POST_BUILD_CHMOD: 755
           DEBUG: 0
@@ -50,7 +51,8 @@ jobs:
 
       - name: Build cli
         env:
-          CGO_ENABLED: 1
+          CGO_ENABLED: 0
+          GOTAGS: lambda
           REF: ${{ github.ref }}
           POST_BUILD_CHMOD: 755
           DEBUG: 0
@@ -101,6 +103,7 @@ jobs:
       - name: Build server
         env:
           CGO_ENABLED: 1
+          GOTAGS: embed
           REF: ${{ github.ref }}
           POST_BUILD_CHMOD: 755
           DEBUG: 0
@@ -108,7 +111,8 @@ jobs:
 
       - name: Build cli
         env:
-          CGO_ENABLED: 1
+          CGO_ENABLED: 0
+          GOTAGS: lambda
           REF: ${{ github.ref }}
           POST_BUILD_CHMOD: 755
           DEBUG: 0
