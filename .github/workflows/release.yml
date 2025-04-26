@@ -27,6 +27,14 @@ jobs:
       - name: Checkout LFS objects
         run: git lfs checkout
 
+      - name: Download bun packages
+        working-directory: ./web
+        run: bun install
+
+      - name: Build
+        working-directory: ./web
+        run: bun run build
+
       - name: Download packages
         run: |
           go mod download
@@ -76,6 +84,14 @@ jobs:
 
       - name: Checkout LFS objects
         run: git lfs checkout
+
+      - name: Download bun packages
+        working-directory: ./web
+        run: bun install
+
+      - name: Build
+        working-directory: ./web
+        run: bun run build
 
       - name: Download packages
         run: |
